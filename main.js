@@ -70,7 +70,7 @@ var mouseFunctions = {
     }
 };
 
-var renderer = new VectorFieldRenderer(600, 600, 20, view.center - new Point(300, 300));
+var renderer = new VectorFieldRenderer(800, 800, 20, view.center - new Point(400, 400));
 function onMouseMove(event) {
    project.clear();
    example = new Group(renderer.render(mouseFunctions.follow(event)));
