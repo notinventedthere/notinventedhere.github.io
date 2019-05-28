@@ -15,27 +15,33 @@ function arrow(origin, vector, headSize) {
     return arrow;
 }
 
-function pointField(origin, width, height, distance) {
+function pointField(origin, width, height, density) {
     var field = [];
-    for (var y = origin.y; y < origin.y + width; y++) {
-        for (var x = origin.x; x < origin.x + height; x++) {
-            field.push(new Point(x * distance, y * distance));
+    for (var y = origin.y; y < origin.y + width; y += width / density) {
+        for (var x = origin.x; x < origin.x + height; x += height / density) {
+            field.push(new Point(x, y));
         }
     }
     return field;
 }
 
-function VectorFieldRenderer(width, height, distance) {
-    var origin = new Point(Math.round(-width / 2), Math.round(-height / 2));
-    this.pointField = pointField(origin, width, height, distance);
+function VectorFieldRenderer(width, height, density, origin) {
+    if (origin == undefined) {
+        origin = new Point(Math.round(-width / 2), Math.round(-height / 2));
+    }
+    this.pointField = pointField(origin, width, height, density);
     this.headSize = 5;
     this.arrowLength = 20;
+    this.normalize = true;
 }
 
-VectorFieldRenderer.prototype.render = function(f) {
+VectorFieldRenderer.prototype.render = function(f, position) {
     var self = this;
     return this.pointField.map(function(point) {
-        return arrow(point, f(point), self.headSize);
+        var vector = f(point);
+        if (self.normalize) vector = vector.normalize(self.arrowLength);
+        if (position) point += position;
+        return arrow(point, vector, self.headSize);
     });
 };
 
@@ -48,14 +54,24 @@ var functions = {
     }
 };
 
-var renderer = new VectorFieldRenderer(20, 20, 80);
-var example = new Group(renderer.render(functions.pow2));
-example.position = new Point(400, 400);
+var mouseFunctions = {
+    slowSin: function(event) {
+        return function(point) {
+            point = (event.point / 10) - point;
+            point.x = Math.sin(point.x);
+            point.y = Math.sin(point.y);
+            return point;
+        };
+    },
+    follow: function(event) {
+        return function(point) {
+            return event.point - point;
+        };
+    }
+};
 
-
+var renderer = new VectorFieldRenderer(600, 600, 20, view.center - new Point(300, 300));
 function onMouseMove(event) {
    project.clear();
-   example = new Group(renderer.render(function(point) {
-       return point - event.point;
-   }));
+   example = new Group(renderer.render(mouseFunctions.follow(event)));
 }
