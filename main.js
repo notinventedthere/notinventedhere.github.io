@@ -40,7 +40,7 @@ function pointField(origin, width, height, density) {
     return field;
 }
 
-function VectorFieldRenderer(width, height, density, origin) {
+function VectorField(width, height, density, origin) {
     if (origin == undefined) {
         origin = new Point(Math.round(-width / 2), Math.round(-height / 2));
     }
@@ -52,9 +52,12 @@ function VectorFieldRenderer(width, height, density, origin) {
     for (var i = 0, len = this.field.length; i < len; i++) {
         this.field[i] = arrow(this.field[i], UNIT_X * 20, this.headSize);
     }
+
+    this.layer = new Layer(this.field);
+    this.layer.visible = false;
 }
 
-VectorFieldRenderer.prototype.calculate = function(f) {
+VectorField.prototype.calculate = function(f) {
     for (var i = 0, len = this.field.length; i < len; i++) {
         var arrow = this.field[i];
         var point = arrow.children['line'].segments[0].point;
@@ -62,6 +65,13 @@ VectorFieldRenderer.prototype.calculate = function(f) {
         if (this.normalize) vector = vector.normalize(this.arrowLength);
         updateArrow(arrow, point, vector);
     }
+};
+
+VectorField.prototype.setMouseFunction = function(f) {
+    var self = this;
+    this.layer.onMouseMove = function(event) {
+        self.calculate(f(event));
+    };
 };
 
 project.currentStyle.strokeWidth = 0.75;
@@ -89,7 +99,11 @@ var mouseFunctions = {
     }
 };
 
-var renderer = new VectorFieldRenderer(800, 800, 20, view.center - new Point(400, 400));
-function onMouseMove(event) {
-  renderer.calculate(mouseFunctions.follow(event));
-}
+var renderer = new VectorField(800, 800, 20, view.center - new Point(400, 400));
+renderer.calculate(functions.pow2);
+renderer.setMouseFunction(mouseFunctions.follow);
+renderer.layer.visible = true;
+var background = new Shape.Rectangle(view.bounds);
+background.fillColor = 'white';
+renderer.layer.addChild(background);
+background.sendToBack();
