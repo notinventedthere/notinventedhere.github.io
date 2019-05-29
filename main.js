@@ -85,7 +85,7 @@ var functions = {
 };
 
 var mouseFunctions = {
-    slowSin: function(event) {
+    sinXY: function(event) {
         return function(point) {
             point = (event.point / 20) - point;
             point.x = Math.sin(point.x);
@@ -97,12 +97,18 @@ var mouseFunctions = {
         return function(point) {
             return event.point - point;
         };
+    },
+    sin: function(event) {
+        return function(point) {
+            return new Point(20, 10 * Math.sin(point.x + event.point.x / 50));
+        };
     }
 };
 
 var vectorFieldLayers = {
     follow: vectorFieldLayer(functions.unit, mouseFunctions.follow),
-    slowSin: vectorFieldLayer(functions.unit, mouseFunctions.slowSin)
+    slowSin: vectorFieldLayer(functions.unit, mouseFunctions.sinXY),
+    sin: vectorFieldLayer(functions.unit, mouseFunctions.sin)
 };
 
 function vectorFieldLayer(f, mouseF) {
