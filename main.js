@@ -116,19 +116,24 @@ function vectorFieldLayer(f, mouseF) {
     return vectorField;
 }
 
-function LayerManager() {
-    this.index = 0;
-    var self = this;
-    view.onMouseDown = function(event) {
-        self.next();
-    };
+function soloLayer(index) {
+    if (index > project.layers.length - 1) return;
+    project.layers[index].visible = true;
+    if (index > 0) project.layers[index - 1].visible = false;
 }
 
-LayerManager.prototype.next = function() {
-    if (this.index > project.layers.length - 1) return;
-    project.layers[this.index].visible = true;
-    if (this.index > 0) project.layers[this.index - 1].visible = true;
-    this.index++;
+var layerManager = {
+    index: 0,
+    next: function() {
+        this.index++;
+        soloLayer(this.index);
+    },
+    prev: function() {
+        this.index--;
+        soloLayer(this.index);
+    }
 };
 
-var layerManager = new LayerManager();
+function onMouseDown(event) {
+    layerManager.next();
+}
