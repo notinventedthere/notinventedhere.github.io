@@ -1,4 +1,7 @@
-var UNIT_V = new Point(1, 0);
+/* paperscript is based on older javascript hence the verbose syntax */
+
+var UNIT_X = new Point(1, 0);
+var UNIT_Y = new Point(0, 1);
 
 function vectorFromAngle(angle) {
     return UNIT_V.rotate(angle);
@@ -7,12 +10,24 @@ function vectorFromAngle(angle) {
 function arrow(origin, vector, headSize) {
     var end = origin + vector;
     var line = new Path([origin, end]);
-    var arrowVector = vector.normalize(headSize);
-    var arrowHead = new Path([end + arrowVector.rotate(135),
-                                end,
-                                end + arrowVector.rotate(-135)]);
-    var arrow = new Group([line, arrowHead]);
-    return arrow;
+    line.name = 'line';
+    var headVector = vector.normalize(headSize);
+    var head = new Path([end + headVector.rotate(135),
+                         end,
+                         end + headVector.rotate(-135)]);
+    head.name = 'head';
+    return new Group([line, head]);
+}
+
+function updateArrow(arrow, origin, vector) {
+    var end = origin + vector;
+    var line = arrow.children['line'];
+    var head = arrow.children['head'];
+    var prev_vector = line.segments[1].point - line.segments[0].point;
+    head.rotate(vector.angle - prev_vector.angle, line.segments[0].point);
+    line.segments[0].point = origin;
+    line.segments[1].point = end;
+    head.position = end;
 }
 
 function pointField(origin, width, height, density) {
@@ -29,20 +44,24 @@ function VectorFieldRenderer(width, height, density, origin) {
     if (origin == undefined) {
         origin = new Point(Math.round(-width / 2), Math.round(-height / 2));
     }
-    this.pointField = pointField(origin, width, height, density);
     this.headSize = 5;
     this.arrowLength = 20;
     this.normalize = true;
+
+    this.field = pointField(origin, width, height, density);
+    for (var i = 0, len = this.field.length; i < len; i++) {
+        this.field[i] = arrow(this.field[i], UNIT_X * 20, this.headSize);
+    }
 }
 
-VectorFieldRenderer.prototype.render = function(f, position) {
-    var self = this;
-    return this.pointField.map(function(point) {
+VectorFieldRenderer.prototype.calculate = function(f) {
+    for (var i = 0, len = this.field.length; i < len; i++) {
+        var arrow = this.field[i];
+        var point = arrow.children['line'].segments[0].point;
         var vector = f(point);
-        if (self.normalize) vector = vector.normalize(self.arrowLength);
-        if (position) point += position;
-        return arrow(point, vector, self.headSize);
-    });
+        if (this.normalize) vector = vector.normalize(this.arrowLength);
+        updateArrow(arrow, point, vector);
+    }
 };
 
 project.currentStyle.strokeWidth = 0.75;
@@ -71,7 +90,7 @@ var mouseFunctions = {
 };
 
 var renderer = new VectorFieldRenderer(600, 600, 20, view.center - new Point(300, 300));
+
 function onMouseMove(event) {
-   project.clear();
-   example = new Group(renderer.render(mouseFunctions.follow(event)));
+  renderer.calculate(mouseFunctions.follow(event));
 }
