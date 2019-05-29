@@ -74,6 +74,13 @@ VectorField.prototype.setMouseFunction = function(f) {
     };
 };
 
+VectorField.prototype.setAnimFunction = function(f) {
+    var self = this;
+    this.layer.onFrame = function(event) {
+        self.calculate(f(event));
+    };
+};
+
 project.currentStyle.strokeWidth = 0.75;
 project.currentStyle.strokeColor = '#e4141b';
 
@@ -105,16 +112,28 @@ var mouseFunctions = {
     }
 };
 
-var vectorFieldLayers = {
-    follow: vectorFieldLayer(functions.unit, mouseFunctions.follow),
-    slowSin: vectorFieldLayer(functions.unit, mouseFunctions.sinXY),
-    sin: vectorFieldLayer(functions.unit, mouseFunctions.sin)
+var animFunctions = {
+    sin: function(event) {
+        return function(point) {
+            return new Point(20, 10 * Math.sin(point.x + event.time));
+        };
+    }
 };
 
-function vectorFieldLayer(f, mouseF) {
+
+var vectorFieldLayers = {
+    follow: vectorFieldLayer(),
+    sinXY: vectorFieldLayer(),
+    sin: vectorFieldLayer()
+};
+
+vectorFieldLayers.follow.setMouseFunction(mouseFunctions.follow);
+vectorFieldLayers.sinXY.setMouseFunction(mouseFunctions.sinXY);
+vectorFieldLayers.sin.setAnimFunction(animFunctions.sin);
+
+function vectorFieldLayer() {
     var vectorField = new VectorField(800, 800, 20, view.center - new Point(400, 400));
-    vectorField.calculate(f);
-    if (mouseF) vectorField.setMouseFunction(mouseF);
+    vectorField.calculate(functions.unit);
     var background = new Shape.Rectangle(view.bounds);
     background.fillColor = 'white';
     vectorField.layer.addChild(background);
