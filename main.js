@@ -27,7 +27,7 @@ function updateArrow(arrow, origin, vector) {
     head.rotate(vector.angle - prev_vector.angle, line.segments[0].point);
     line.segments[0].point = origin;
     line.segments[1].point = end;
-    head.position = end;
+    head.position = end + head.bounds.center - head.segments[1].point;
 }
 
 function pointField(origin, width, height, density) {
