@@ -80,13 +80,14 @@ project.currentStyle.strokeColor = '#e4141b';
 var functions = {
     pow2: function(point) {
         return new Point(Math.pow(point.x, 2), Math.pow(point.y, 2));
-    }
+    },
+    unit: function(point) { return UNIT_X * 20; }
 };
 
 var mouseFunctions = {
     slowSin: function(event) {
         return function(point) {
-            point = (event.point / 10) - point;
+            point = (event.point / 20) - point;
             point.x = Math.sin(point.x);
             point.y = Math.sin(point.y);
             return point;
@@ -99,11 +100,35 @@ var mouseFunctions = {
     }
 };
 
-var renderer = new VectorField(800, 800, 20, view.center - new Point(400, 400));
-renderer.calculate(functions.pow2);
-renderer.setMouseFunction(mouseFunctions.follow);
-renderer.layer.visible = true;
-var background = new Shape.Rectangle(view.bounds);
-background.fillColor = 'white';
-renderer.layer.addChild(background);
-background.sendToBack();
+var vectorFieldLayers = {
+    follow: vectorFieldLayer(functions.unit, mouseFunctions.follow),
+    slowSin: vectorFieldLayer(functions.unit, mouseFunctions.slowSin)
+};
+
+function vectorFieldLayer(f, mouseF) {
+    var vectorField = new VectorField(800, 800, 20, view.center - new Point(400, 400));
+    vectorField.calculate(f);
+    if (mouseF) vectorField.setMouseFunction(mouseF);
+    var background = new Shape.Rectangle(view.bounds);
+    background.fillColor = 'white';
+    vectorField.layer.addChild(background);
+    background.sendToBack();
+    return vectorField;
+}
+
+function LayerManager() {
+    this.index = 0;
+    var self = this;
+    view.onMouseDown = function(event) {
+        self.next();
+    };
+}
+
+LayerManager.prototype.next = function() {
+    if (this.index > project.layers.length - 1) return;
+    project.layers[this.index].visible = true;
+    if (this.index > 0) project.layers[this.index - 1].visible = true;
+    this.index++;
+};
+
+var layerManager = new LayerManager();
