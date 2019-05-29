@@ -109,6 +109,13 @@ var mouseFunctions = {
         return function(point) {
             return new Point(20, 10 * Math.sin(point.x + event.point.x / 50));
         };
+    },
+    pow: function(event) {
+        return function(point) {
+            point = point - new Point(800, 800);
+            var mouseX = event.point.x;
+            return new Point(Math.pow(point.x + mouseX, 2), Math.pow(point.y + mouseX, 2));
+        };
     }
 };
 
@@ -124,13 +131,18 @@ var animFunctions = {
 var vectorFieldLayers = {
     follow: vectorFieldLayer(),
     sinXY: vectorFieldLayer(),
-    sin: vectorFieldLayer()
+    sin: vectorFieldLayer(),
+    pow: vectorFieldLayer()
 };
 
 vectorFieldLayers.follow.setMouseFunction(mouseFunctions.follow);
 vectorFieldLayers.sinXY.setMouseFunction(mouseFunctions.sinXY);
 
+vectorFieldLayers.pow.setMouseFunction(mouseFunctions.pow);
+vectorFieldLayers.pow.normalize = false;
+
 vectorFieldLayers.sin.setAnimFunction(animFunctions.sin);
+
 
 function vectorFieldLayer() {
     var vectorField = new VectorField(800, 800, 20, view.center - new Point(400, 400));
