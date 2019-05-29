@@ -113,7 +113,7 @@ var mouseFunctions = {
     pow: function(event) {
         return function(point) {
             point = point - new Point(800, 800);
-            var mouseX = event.point.x;
+            var mouseX = 400 * Math.sin(0.01 * event.point.x);
             return new Point(Math.pow(point.x + mouseX, 2), Math.pow(point.y + mouseX, 2));
         };
     }
