@@ -129,6 +129,7 @@ var vectorFieldLayers = {
 
 vectorFieldLayers.follow.setMouseFunction(mouseFunctions.follow);
 vectorFieldLayers.sinXY.setMouseFunction(mouseFunctions.sinXY);
+
 vectorFieldLayers.sin.setAnimFunction(animFunctions.sin);
 
 function vectorFieldLayer() {
@@ -162,3 +163,5 @@ var layerManager = {
 function onMouseDown(event) {
     layerManager.next();
 }
+
+layerManager.next();
