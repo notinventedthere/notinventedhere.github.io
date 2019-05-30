@@ -1,11 +1,5 @@
-/* paperscript is based on older javascript hence the verbose syntax */
-
 var UNIT_X = new Point(1, 0);
 var UNIT_Y = new Point(0, 1);
-
-function vectorFromAngle(angle) {
-    return UNIT_V.rotate(angle);
-}
 
 function arrow(origin, vector, headSize) {
     var end = origin + vector;
@@ -16,18 +10,23 @@ function arrow(origin, vector, headSize) {
                          end,
                          end + headVector.rotate(-135)]);
     head.name = 'head';
-    return new Group([line, head]);
-}
 
-function updateArrow(arrow, origin, vector) {
-    var end = origin + vector;
-    var line = arrow.children['line'];
-    var head = arrow.children['head'];
-    var prev_vector = line.segments[1].point - line.segments[0].point;
-    head.rotate(vector.angle - prev_vector.angle, line.segments[0].point);
-    line.segments[0].point = origin;
-    line.segments[1].point = end;
-    head.position = end + head.bounds.center - head.segments[1].point;
+    var new_arrow = new Group([line, head]);
+    new_arrow.update = function(vector) {
+        var line = this.children['line'];
+        var head = this.children['head'];
+        var origin = line.segments[0].point;
+        var end = origin + vector;
+        var prev_vector = line.segments[1].point - origin;
+        head.rotate(vector.angle - prev_vector.angle, origin);
+        line.segments[1].point = end;
+        head.position = end + head.bounds.center - head.segments[1].point;
+    };
+    new_arrow.setPosition = function(point) {
+        this.position = point + this.bounds.center - this.children['line'].segments[0].point;
+    };
+
+    return new_arrow;
 }
 
 function pointField(origin, width, height, density) {
@@ -40,44 +39,63 @@ function pointField(origin, width, height, density) {
     return field;
 }
 
-function VectorField(width, height, density, origin) {
-    if (origin == undefined) {
-        origin = new Point(Math.round(-width / 2), Math.round(-height / 2));
-    }
-    this.headSize = 5;
-    this.arrowLength = 20;
+function VectorPlot(fun, width, height) {
+    this.fun = fun;
+    this.width = width;
+    this.height = height;
+
     this.normalize = true;
+    this.normalizeAmount = 20;
+    this.scaleFactor = 35;
 
-    this.field = pointField(origin, width, height, density);
-    for (var i = 0, len = this.field.length; i < len; i++) {
-        this.field[i] = arrow(this.field[i], UNIT_X * 20, this.headSize);
-    }
-
-    this.layer = new Layer(this.field);
+    this.points = new Map();
+    this.layer = new Layer(this.points.values());
     this.layer.visible = false;
 }
 
-VectorField.prototype.calculate = function(f) {
-    for (var i = 0, len = this.field.length; i < len; i++) {
-        var arrow = this.field[i];
-        var point = arrow.children['line'].segments[0].point;
-        var vector = f(point);
-        if (this.normalize) vector = vector.normalize(this.arrowLength);
-        updateArrow(arrow, point, vector);
+VectorPlot.prototype.calculate = function() {
+    var entries = this.points.entries();
+    for (let entry of entries) {
+        var point = entry[0];
+        var vectorDrawing = entry[1];
+        if (this.normalize) {
+            vectorDrawing.update(this.fun(point).normalize(this.normalizeAmount));
+        } else {
+            vectorDrawing.update(this.fun(point));
+        }
     }
 };
 
-VectorField.prototype.setMouseFunction = function(f) {
+VectorPlot.prototype.addPoint = function(point, vectorDrawing) {
+    // cartesian coordinates with origin in middle of window
+    point = point.transform(new Matrix(this.scaleFactor, 0, 0, -this.scaleFactor,
+                                       view.center.x, view.center.y));
+    vectorDrawing.setPosition(point);
+
+    this.points.set(point, vectorDrawing);
+};
+
+VectorPlot.prototype.fillWithPoints = function(density, vectorDrawingFunction) {
+    var new_points = pointField(new Point(- this.width / 2, - this.height / 2),
+                                this.width, this.height, density);
+    for (var i = 0, len = new_points.length; i < len; i++) {
+        this.addPoint(new_points[i], vectorDrawingFunction());
+    }
+};
+
+VectorPlot.prototype.setMouseFunction = function(f) {
     var self = this;
     this.layer.onMouseMove = function(event) {
-        self.calculate(f(event));
+        self.fun = f(event);
+        self.calculate();
     };
 };
 
-VectorField.prototype.setAnimFunction = function(f) {
+VectorPlot.prototype.setAnimFunction = function(f) {
     var self = this;
     this.layer.onFrame = function(event) {
-        self.calculate(f(event));
+        self.fun = f(event);
+        self.calculate();
     };
 };
 
@@ -136,6 +154,7 @@ var vectorFieldLayers = {
 };
 
 vectorFieldLayers.follow.setMouseFunction(mouseFunctions.follow);
+
 vectorFieldLayers.sinXY.setMouseFunction(mouseFunctions.sinXY);
 
 vectorFieldLayers.pow.setMouseFunction(mouseFunctions.pow);
@@ -145,8 +164,8 @@ vectorFieldLayers.sin.setAnimFunction(animFunctions.sin);
 
 
 function vectorFieldLayer() {
-    var vectorField = new VectorField(800, 800, 20, view.center - new Point(400, 400));
-    vectorField.calculate(functions.unit);
+    var vectorField = new VectorPlot(functions.unit, 20, 20);
+    vectorField.fillWithPoints(20, function() { return arrow(new Point(1, 1), UNIT_X * 20, 5); });
     var background = new Shape.Rectangle(view.bounds);
     background.fillColor = 'white';
     vectorField.layer.addChild(background);
@@ -176,4 +195,4 @@ function onMouseDown(event) {
     layerManager.next();
 }
 
-layerManager.next();
+soloLayer(0);

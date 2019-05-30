@@ -3,6 +3,8 @@
 Playing around with vector fields in paperjs.
 * Notes
 - vectors must be on the left side of a multiplication due to js typing quirks
+- when the error 'this._x is not a function' is raised, make sure all constructors
+  have a `new` keyword
 * TODOs
 ** DONE Read about vector fields
 CLOSED: [2019-05-27 Mon 23:21]
