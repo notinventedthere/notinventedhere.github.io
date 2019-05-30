@@ -5,22 +5,22 @@ const UNIT_Y = new Point(0, 1);
  paperjs Items with update(vector) method and custom setPosition method */
 
 function arrow(origin, vector, headSize) {
-    var end = origin + vector;
-    var line = new Path([origin, end]);
+    let end = origin + vector;
+    let line = new Path([origin, end]);
     line.name = 'line';
-    var headVector = vector.normalize(headSize);
-    var head = new Path([end + headVector.rotate(135),
+    let headVector = vector.normalize(headSize);
+    let head = new Path([end + headVector.rotate(135),
                          end,
                          end + headVector.rotate(-135)]);
     head.name = 'head';
 
-    var new_arrow = new Group([line, head]);
+    let new_arrow = new Group([line, head]);
     new_arrow.update = function(vector) {
-        var line = this.children['line'];
-        var head = this.children['head'];
-        var origin = line.segments[0].point;
-        var end = origin + vector;
-        var prev_vector = line.segments[1].point - origin;
+        let line = this.children['line'];
+        let head = this.children['head'];
+        let origin = line.segments[0].point;
+        let end = origin + vector;
+        let prev_vector = line.segments[1].point - origin;
         head.rotate(vector.angle - prev_vector.angle, origin);
         line.segments[1].point = end;
         head.position = end + head.bounds.center - head.segments[1].point;
@@ -28,6 +28,7 @@ function arrow(origin, vector, headSize) {
     new_arrow.setPosition = function(point) {
         this.position = point + this.bounds.center - this.children['line'].segments[0].point;
     };
+    new_arrow.pointAtHead = () => this.children['head'][1];
 
     return new_arrow;
 }
@@ -49,9 +50,9 @@ function dot(origin, vector, size) {
 
 
 function pointField(origin, width, height, density) {
-    var field = [];
-    for (var y = origin.y; y < origin.y + width; y += width / density) {
-        for (var x = origin.x; x < origin.x + height; x += height / density) {
+    let field = [];
+    for (let y = origin.y; y < origin.y + width; y += width / density) {
+        for (let x = origin.x; x < origin.x + height; x += height / density) {
             field.push(new Point(x, y));
         }
     }
@@ -74,10 +75,10 @@ class VectorPlot {
     }
 
     calculate() {
-        var entries = this.points.entries();
+        let entries = this.points.entries();
         for (let entry of entries) {
-            var point = entry[0];
-            var vectorDrawing = entry[1];
+            let point = entry[0];
+            let vectorDrawing = entry[1];
             if (this.normalize) {
                 vectorDrawing.update(this.fun(point).normalize(this.normalizeAmount));
             } else {
@@ -100,7 +101,7 @@ class VectorPlot {
     }
 
     fillWithPoints(density, vectorDrawingFunction) {
-        var new_points = pointField(new Point(- this.width / 2, - this.height / 2),
+        let new_points = pointField(new Point(- this.width / 2, - this.height / 2),
                                     this.width, this.height, density);
         for (let point of new_points) {
             this.addPoint(point, vectorDrawingFunction());
@@ -108,7 +109,7 @@ class VectorPlot {
     }
 
     setMouseFunction(f) {
-        var self = this;
+        let self = this;
         this.layer.onMouseMove = function(event) {
             self.fun = f(event);
             self.calculate();
@@ -116,7 +117,7 @@ class VectorPlot {
     }
 
     setAnimFunction(f) {
-        var self = this;
+        let self = this;
         this.layer.onFrame = function(event) {
             self.fun = f(event);
             self.calculate();
@@ -124,12 +125,12 @@ class VectorPlot {
     }
 }
 
-var functions = {
+let functions = {
     pow2: point => new Point(Math.pow(point.x, 2), Math.pow(point.y, 2)),
     unit: point => UNIT_X * 20
 };
 
-var mouseFunctions = {
+let mouseFunctions = {
     sinXY: function(event) {
         return function(point) {
             point = (event.point / 20) - point;
@@ -149,13 +150,13 @@ var mouseFunctions = {
     pow: function(event) {
         return function(point) {
             point = point - new Point(800, 800);
-            var mouseX = 400 * Math.sin(0.01 * event.point.x);
+            let mouseX = 400 * Math.sin(0.01 * event.point.x);
             return new Point(Math.pow(point.x + mouseX, 2), Math.pow(point.y + mouseX, 2));
         };
     }
 };
 
-var animFunctions = {
+let animFunctions = {
     sin: function(event) {
         return function(point) {
             return new Point(20, 10 * Math.sin(point.x + event.time));
@@ -165,11 +166,12 @@ var animFunctions = {
 
 
 
+/* Layer Management */
 
 function vectorFieldLayer() {
-    var vectorField = new VectorPlot(functions.unit, 20, 20);
+    let vectorField = new VectorPlot(functions.unit, 20, 20);
     vectorField.fillWithPoints(20, () => arrow(new Point(1, 1), UNIT_X * 20, 5));
-    var background = new Shape.Rectangle(view.bounds);
+    let background = new Shape.Rectangle(view.bounds);
     background.fillColor = 'white';
     vectorField.layer.addChild(background);
     background.sendToBack();
@@ -182,7 +184,7 @@ function soloLayer(index) {
     if (index > 0) project.layers[index - 1].visible = false;
 }
 
-var layerManager = {
+let layerManager = {
     index: 0,
     next: function() {
         this.index++;
@@ -202,16 +204,16 @@ function onMouseDown(event) {
 
 
 
-/* page setup */
+/* Page Setup */
 
 project.currentStyle.strokeWidth = 0.75;
 project.currentStyle.strokeColor = '#e4141b';
 
-var layers = {
+let layers = {
     follow: vectorFieldLayer(),
     sinXY: vectorFieldLayer(),
     sin: vectorFieldLayer(),
-    pow: vectorFieldLayer()
+    pow: vectorFieldLayer(),
 };
 
 layers.follow.setMouseFunction(mouseFunctions.follow);
@@ -222,5 +224,6 @@ layers.pow.setMouseFunction(mouseFunctions.pow);
 layers.pow.normalize = false;
 
 layers.sin.setAnimFunction(animFunctions.sin);
+
 
 soloLayer(0);
