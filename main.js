@@ -1,5 +1,8 @@
-var UNIT_X = new Point(1, 0);
-var UNIT_Y = new Point(0, 1);
+const UNIT_X = new Point(1, 0);
+const UNIT_Y = new Point(0, 1);
+
+/* vectorObjects
+ paperjs Items with update(vector) method and custom setPosition method */
 
 function arrow(origin, vector, headSize) {
     var end = origin + vector;
@@ -29,6 +32,22 @@ function arrow(origin, vector, headSize) {
     return new_arrow;
 }
 
+function dot(origin, vector, size) {
+    let circle = new Shape.Circle(origin + vector, size);
+    circle.origin = origin;
+    circle.update = function(vector) {
+        this.position = this.origin + vector;
+    };
+    circle.setPosition = function(point) {
+        this.origin = point;
+        this.position = point;
+    };
+    return circle;
+}
+
+
+
+
 function pointField(origin, width, height, density) {
     var field = [];
     for (var y = origin.y; y < origin.y + width; y += width / density) {
@@ -39,74 +58,75 @@ function pointField(origin, width, height, density) {
     return field;
 }
 
-function VectorPlot(fun, width, height) {
-    this.fun = fun;
-    this.width = width;
-    this.height = height;
+class VectorPlot {
+    constructor(fun, width, height) {
+        this.fun = fun;
+        this.width = width;
+        this.height = height;
 
-    this.normalize = true;
-    this.normalizeAmount = 20;
-    this.scaleFactor = 35;
+        this.normalize = true;
+        this.normalizeAmount = 20;
+        this.scaleFactor = 35;
 
-    this.points = new Map();
-    this.layer = new Layer(this.points.values());
-    this.layer.visible = false;
-}
+        this.points = new Map();
+        this.layer = new Layer(this.points.values());
+        this.layer.visible = false;
+    }
 
-VectorPlot.prototype.calculate = function() {
-    var entries = this.points.entries();
-    for (let entry of entries) {
-        var point = entry[0];
-        var vectorDrawing = entry[1];
-        if (this.normalize) {
-            vectorDrawing.update(this.fun(point).normalize(this.normalizeAmount));
-        } else {
-            vectorDrawing.update(this.fun(point));
+    calculate() {
+        var entries = this.points.entries();
+        for (let entry of entries) {
+            var point = entry[0];
+            var vectorDrawing = entry[1];
+            if (this.normalize) {
+                vectorDrawing.update(this.fun(point).normalize(this.normalizeAmount));
+            } else {
+                vectorDrawing.update(this.fun(point));
+            }
         }
     }
-};
 
-VectorPlot.prototype.addPoint = function(point, vectorDrawing) {
-    // cartesian coordinates with origin in middle of window
-    point = point.transform(new Matrix(this.scaleFactor, 0, 0, -this.scaleFactor,
-                                       view.center.x, view.center.y));
-    vectorDrawing.setPosition(point);
-
-    this.points.set(point, vectorDrawing);
-};
-
-VectorPlot.prototype.fillWithPoints = function(density, vectorDrawingFunction) {
-    var new_points = pointField(new Point(- this.width / 2, - this.height / 2),
-                                this.width, this.height, density);
-    for (var i = 0, len = new_points.length; i < len; i++) {
-        this.addPoint(new_points[i], vectorDrawingFunction());
+    normalizePointForRender(point) {
+        // cartesian coordinates with origin in middle of window
+        return point.transform(new Matrix(this.scaleFactor, 0, 0, -this.scaleFactor,
+                                          view.center.x, view.center.y));
     }
-};
 
-VectorPlot.prototype.setMouseFunction = function(f) {
-    var self = this;
-    this.layer.onMouseMove = function(event) {
-        self.fun = f(event);
-        self.calculate();
-    };
-};
+    addPoint(point, vectorDrawing) {
+        point = this.normalizePointForRender(point);
+        vectorDrawing.setPosition(point);
 
-VectorPlot.prototype.setAnimFunction = function(f) {
-    var self = this;
-    this.layer.onFrame = function(event) {
-        self.fun = f(event);
-        self.calculate();
-    };
-};
+        this.points.set(point, vectorDrawing);
+    }
 
-project.currentStyle.strokeWidth = 0.75;
-project.currentStyle.strokeColor = '#e4141b';
+    fillWithPoints(density, vectorDrawingFunction) {
+        var new_points = pointField(new Point(- this.width / 2, - this.height / 2),
+                                    this.width, this.height, density);
+        for (let point of new_points) {
+            this.addPoint(point, vectorDrawingFunction());
+        }
+    }
+
+    setMouseFunction(f) {
+        var self = this;
+        this.layer.onMouseMove = function(event) {
+            self.fun = f(event);
+            self.calculate();
+        };
+    }
+
+    setAnimFunction(f) {
+        var self = this;
+        this.layer.onFrame = function(event) {
+            self.fun = f(event);
+            self.calculate();
+        };
+    }
+}
 
 var functions = {
-    pow2: function(point) {
-        return new Point(Math.pow(point.x, 2), Math.pow(point.y, 2));
-    },
-    unit: function(point) { return UNIT_X * 20; }
+    pow2: point => new Point(Math.pow(point.x, 2), Math.pow(point.y, 2)),
+    unit: point => UNIT_X * 20
 };
 
 var mouseFunctions = {
@@ -119,9 +139,7 @@ var mouseFunctions = {
         };
     },
     follow: function(event) {
-        return function(point) {
-            return event.point - point;
-        };
+        return point => event.point - point;
     },
     sin: function(event) {
         return function(point) {
@@ -146,26 +164,11 @@ var animFunctions = {
 };
 
 
-var vectorFieldLayers = {
-    follow: vectorFieldLayer(),
-    sinXY: vectorFieldLayer(),
-    sin: vectorFieldLayer(),
-    pow: vectorFieldLayer()
-};
-
-vectorFieldLayers.follow.setMouseFunction(mouseFunctions.follow);
-
-vectorFieldLayers.sinXY.setMouseFunction(mouseFunctions.sinXY);
-
-vectorFieldLayers.pow.setMouseFunction(mouseFunctions.pow);
-vectorFieldLayers.pow.normalize = false;
-
-vectorFieldLayers.sin.setAnimFunction(animFunctions.sin);
 
 
 function vectorFieldLayer() {
     var vectorField = new VectorPlot(functions.unit, 20, 20);
-    vectorField.fillWithPoints(20, function() { return arrow(new Point(1, 1), UNIT_X * 20, 5); });
+    vectorField.fillWithPoints(20, () => arrow(new Point(1, 1), UNIT_X * 20, 5));
     var background = new Shape.Rectangle(view.bounds);
     background.fillColor = 'white';
     vectorField.layer.addChild(background);
@@ -194,5 +197,30 @@ var layerManager = {
 function onMouseDown(event) {
     layerManager.next();
 }
+
+
+
+
+
+/* page setup */
+
+project.currentStyle.strokeWidth = 0.75;
+project.currentStyle.strokeColor = '#e4141b';
+
+var layers = {
+    follow: vectorFieldLayer(),
+    sinXY: vectorFieldLayer(),
+    sin: vectorFieldLayer(),
+    pow: vectorFieldLayer()
+};
+
+layers.follow.setMouseFunction(mouseFunctions.follow);
+
+layers.sinXY.setMouseFunction(mouseFunctions.sinXY);
+
+layers.pow.setMouseFunction(mouseFunctions.pow);
+layers.pow.normalize = false;
+
+layers.sin.setAnimFunction(animFunctions.sin);
 
 soloLayer(0);
