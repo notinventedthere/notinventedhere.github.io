@@ -45,5 +45,4 @@ Playing around with vector fields in paperjs.
 ## DONE Find out how to draw arrows in paperjs
 
 use paths (i.e. it's manual)
-CLOSED: <span class="timestamp-wrapper"><span class="timestamp">[2019-05-27 Mon 18:29]</span></span>
 
