@@ -145,9 +145,9 @@ let animFunctions = {
 
 /* Layer Management */
 
-function vectorFieldLayer(vectorSymbol) {
-    let vectorField = new VectorPlot(functions.unit, 20, 20);
-    vectorField.fillWithPoints(20, vectorSymbol);
+function vectorFieldLayer(width, height, density, vectorSymbol) {
+    let vectorField = new VectorPlot(functions.unit, width, height);
+    vectorField.fillWithPoints(density, vectorSymbol);
     let background = new Shape.Rectangle(view.bounds);
     background.fillColor = 'white';
     vectorField.layer.addChild(background);
@@ -187,10 +187,10 @@ project.currentStyle.strokeWidth = 0.75;
 project.currentStyle.strokeColor = '#e4141b';
 
 let layers = {
-    follow: vectorFieldLayer(arrowSymbol(0.25)),
-    sinXY: vectorFieldLayer(dotSymbol()),
-    sin: vectorFieldLayer(arrowSymbol(0.25)),
-    pow: vectorFieldLayer(arrowSymbol(0.25)),
+    follow: vectorFieldLayer(20, 20, 20, arrowSymbol(0.25)),
+    sinXY: vectorFieldLayer(15, 15, 50, dotSymbol()),
+    sin: vectorFieldLayer(20, 20, 20, arrowSymbol(0.25)),
+    pow: vectorFieldLayer(20, 20, 20, arrowSymbol(0.25)),
 };
 
 layers.follow.setMouseFunction(mouseFunctions.follow);
