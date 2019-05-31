@@ -1,27 +1,49 @@
 const UNIT_X = new Point(1, 0);
 const UNIT_Y = new Point(0, 1);
 
-/* vectorSymbols */
+/* vectorObjects
+ paperjs Items with update(vector) method and custom setPosition method */
 
-function arrowSymbol(headSize) {
-    let origin = new Point(0, 0);
-    let end = UNIT_X;
+function arrow(origin, vector, headSize) {
+    let end = origin + vector;
     let line = new Path([origin, end]);
-    let headVector = UNIT_X.normalize(headSize);
+    line.name = 'line';
+    let headVector = vector.normalize(headSize);
     let head = new Path([end + headVector.rotate(135),
                          end,
                          end + headVector.rotate(-135)]);
+    head.name = 'head';
 
-    let arrow = new Group([line, head]);
-    arrow.strokeScaling = false;
-    return new SymbolDefinition(arrow);
+    let new_arrow = new Group([line, head]);
+    new_arrow.update = function(vector) {
+        let line = this.children['line'];
+        let head = this.children['head'];
+        let origin = line.segments[0].point;
+        let end = origin + vector;
+        let prev_vector = line.segments[1].point - origin;
+        head.rotate(vector.angle - prev_vector.angle, origin);
+        line.segments[1].point = end;
+        head.position = end + head.bounds.center - head.segments[1].point;
+    };
+    new_arrow.setPosition = function(point) {
+        this.position = point + this.bounds.center - this.children['line'].segments[0].point;
+    };
+    new_arrow.pointAtHead = () => this.children['head'][1];
+
+    return new_arrow;
 }
 
-function dotSymbol() {
-    let circle = new Shape.Circle(UNIT_X, 0.1);
-    circle.fillColor = 'red';
-    circle.strokeScaling = false;
-    return new SymbolDefinition(circle);
+function dot(origin, vector, size) {
+    let circle = new Shape.Circle(origin + vector, size);
+    circle.origin = origin;
+    circle.update = function(vector) {
+        this.position = this.origin + vector;
+    };
+    circle.setPosition = function(point) {
+        this.origin = point;
+        this.position = point;
+    };
+    return circle;
 }
 
 
@@ -56,11 +78,12 @@ class VectorPlot {
         let entries = this.points.entries();
         for (let entry of entries) {
             let point = entry[0];
-            let placed = entry[1];
-            let vector = this.fun(point);
-            if (this.normalize) vector = vector.normalize(this.normalizeAmount);
-            placed.scaling = new Point(vector.length, vector.length);
-            placed.rotation = vector.angle;
+            let vectorDrawing = entry[1];
+            if (this.normalize) {
+                vectorDrawing.update(this.fun(point).normalize(this.normalizeAmount));
+            } else {
+                vectorDrawing.update(this.fun(point));
+            }
         }
     }
 
@@ -70,18 +93,18 @@ class VectorPlot {
                                           view.center.x, view.center.y));
     }
 
-    addPoint(point, vectorSymbol) {
+    addPoint(point, vectorDrawing) {
         point = this.normalizePointForRender(point);
-        let placed = vectorSymbol.place(point);
-        placed.pivot = new Point(-0.5, 0);
-        this.points.set(point, placed);
+        vectorDrawing.setPosition(point);
+
+        this.points.set(point, vectorDrawing);
     }
 
-    fillWithPoints(density, vectorSymbol) {
+    fillWithPoints(density, vectorDrawingFunction) {
         let new_points = pointField(new Point(- this.width / 2, - this.height / 2),
                                     this.width, this.height, density);
         for (let point of new_points) {
-            this.addPoint(point, vectorSymbol);
+            this.addPoint(point, vectorDrawingFunction());
         }
     }
 
@@ -145,9 +168,9 @@ let animFunctions = {
 
 /* Layer Management */
 
-function vectorFieldLayer(width, height, density, vectorSymbol) {
-    let vectorField = new VectorPlot(functions.unit, width, height);
-    vectorField.fillWithPoints(density, vectorSymbol);
+function vectorFieldLayer() {
+    let vectorField = new VectorPlot(functions.unit, 20, 20);
+    vectorField.fillWithPoints(20, () => arrow(new Point(1, 1), UNIT_X * 20, 5));
     let background = new Shape.Rectangle(view.bounds);
     background.fillColor = 'white';
     vectorField.layer.addChild(background);
@@ -187,10 +210,10 @@ project.currentStyle.strokeWidth = 0.75;
 project.currentStyle.strokeColor = '#e4141b';
 
 let layers = {
-    follow: vectorFieldLayer(20, 20, 20, arrowSymbol(0.25)),
-    sinXY: vectorFieldLayer(15, 15, 50, dotSymbol()),
-    sin: vectorFieldLayer(20, 20, 20, arrowSymbol(0.25)),
-    pow: vectorFieldLayer(20, 20, 20, arrowSymbol(0.25)),
+    follow: vectorFieldLayer(),
+    sinXY: vectorFieldLayer(),
+    sin: vectorFieldLayer(),
+    pow: vectorFieldLayer(),
 };
 
 layers.follow.setMouseFunction(mouseFunctions.follow);
