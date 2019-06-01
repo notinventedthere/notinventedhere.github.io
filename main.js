@@ -20,8 +20,8 @@ function arrow(origin, headSize) {
     new_arrow.update = function(vector) {
         this.rotation = vector.angle;
 
-        let line = this.children['line'];
-        let head = this.children['head'];
+        let line = this.children.line;
+        let head = this.children.head;
         let origin = line.segments[0].point;
         let new_vector = line.segments[1].point - origin;
         new_vector.length = vector.length;
@@ -75,26 +75,22 @@ class VectorPlot {
 
         this.points = new Map();
         this.layer = new Layer(this.points.values());
-        this.layer.visible = false;
     }
 
     calculate() {
         let entries = this.points.entries();
         for (let entry of entries) {
             let point = entry[0];
+            let vector = this.fun(point).transform(new Matrix(1, 0, 0, -1, 0, 0));
+            if (this.normalize) vector = vector.normalize(this.normalizeAmount);
             let vectorObject = entry[1];
-            if (this.normalize) {
-                vectorObject.update(this.fun(point).normalize(this.normalizeAmount));
-            } else {
-                vectorObject.update(this.fun(point));
-            }
+            vectorObject.update(vector);
         }
     }
 
     addPoint(point, vectorObject){
-        point = point.transform(cartesianMatrix(this.scaleFactor));
         let v = vectorObject();
-        v.position = point;
+        v.position = point.transform(cartesianMatrix(this.scaleFactor));
 
         this.points.set(point, v);
     }
@@ -139,18 +135,11 @@ let mouseFunctions = {
         };
     },
     follow: function(event) {
-        return point => event.point - point;
+        return point => event.point.transform(cartesianMatrix(35).invert()) - point;
     },
     sin: function(event) {
         return function(point) {
             return new Point(20, 10 * Math.sin(point.x + event.point.x / 50));
-        };
-    },
-    pow: function(event) {
-        return function(point) {
-            point = point - new Point(800, 800);
-            let mouseX = 400 * Math.sin(0.01 * event.point.x);
-            return new Point(Math.pow(point.x + mouseX, 2), Math.pow(point.y + mouseX, 2));
         };
     }
 };
@@ -235,7 +224,7 @@ function setupLayer(layer) {
 function soloLayer(index) {
     if (index > project.layers.length - 1) return;
     project.layers[index].visible = true;
-    if (project.layers[index].run) project.layers[index].run();
+    if (project.layers[index].run) project.layers[index].run(); // really ugly
     if (index > 0) project.layers[index - 1].visible = false;
 }
 
@@ -278,13 +267,17 @@ layers.sin.setAnimFunction(animFunctions.sin);
 
 let flow1 = new FlowSimulator(point => new Point(point.y + Math.random() * 2, -point.x + Math.random() * 2), 60);
 let circleSymbol = new SymbolDefinition(new Shape.Circle(UNIT_X, 5), new Point(0.2, 0));
-for (let i = 0; i < 20; i++) {
+for (let i = 0; i < 50; i++) {
     let placedCircle = circleSymbol.place(1,1);
     let newParticle = particle(placedCircle, new Point(Math.random() * 5 - 2.5, Math.random() * 5 - 2.5));
     flow1.particles.push(newParticle);
     flow1.layer.addChild(newParticle);
 }
-flow1.timeScale = 5;
+flow1.timeScale = 2;
+let flow1field = new VectorPlot(point => new Point(point.y, -point.x), 20, 20);
+flow1field.fillWithPoints(20, () => arrow(new Point(0, 0), 5));
+flow1field.calculate();
+flow1.layer.addChild(flow1field.layer);
 setupLayer(flow1.layer);
 
 
