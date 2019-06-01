@@ -47,6 +47,12 @@ function dot(origin, size) {
 
 
 
+function cartesianMatrix(scaleFactor) {
+    return new Matrix(scaleFactor, 0,
+                      0, -scaleFactor,
+                      view.center.x, view.center.y);
+}
+
 function pointField(origin, width, height, density) {
     let field = [];
     for (let y = origin.y; y < origin.y + width; y += width / density) {
@@ -85,14 +91,8 @@ class VectorPlot {
         }
     }
 
-    normalizePointForRender(point) {
-        // cartesian coordinates with origin in middle of window
-        return point.transform(new Matrix(this.scaleFactor, 0, 0, -this.scaleFactor,
-                                          view.center.x, view.center.y));
-    }
-
     addPoint(point, vectorObject){
-        point = this.normalizePointForRender(point);
+        point = point.transform(cartesianMatrix(this.scaleFactor));
         let v = vectorObject();
         v.position = point;
 
@@ -165,21 +165,77 @@ let animFunctions = {
 
 
 
+/* Flow */
+
+class FlowSimulator {
+    constructor(vectorFunction, timeStep, particles=[]) {
+        this.vectorFunction = vectorFunction;
+        this.timeStep = timeStep;
+        this.timeScale = 1;
+        this.particles = particles;
+        this.layer = new Layer(particles);
+        let self = this;
+        this.layer.run = function() {
+            self.layer.onFrame = function(event) {
+                if (self.ready(event)) {
+                    for (let particle of self.particles) {
+                        particle.point += particle.velocity * (self.timeScale / self.timeStep);
+                        particle.velocity = self.vectorFunction(particle.point);
+                    }
+                }
+            };
+        };
+        this.remainingTime = 0;
+    }
+
+    ready(event) {
+        this.remainingTime -= event.delta;
+        if (this.remainingTime <= 0) {
+            this.remainingTime = 1 / this.timeStep;
+            return true;
+        } else {
+            return false;
+        }
+    }
+}
+
+function particle(item, startPosition=new Point(0, 0)) {
+    Object.defineProperty(item, 'point', {
+        get: function() { return this._point; },
+        set: function(point) {
+            this._point = point;
+            this.position = point.transform(cartesianMatrix(35));
+        }
+    });
+    item.point = startPosition;
+    item.velocity = new Point(0, 0);
+    return item;
+}
+
+
 /* Layer Management */
 
 function vectorFieldLayer(vectorObjectFunction) {
     let vectorField = new VectorPlot(functions.unit, 20, 20);
     vectorField.fillWithPoints(20, vectorObjectFunction);
+    vectorField.normalizeAmount = 15;
+    setupLayer(vectorField.layer);
+    return vectorField;
+}
+
+function setupLayer(layer) {
+    layer.visible = false;
     let background = new Shape.Rectangle(view.bounds);
     background.fillColor = 'white';
-    vectorField.layer.addChild(background);
+    layer.addChild(background);
     background.sendToBack();
-    return vectorField;
+    return layer;
 }
 
 function soloLayer(index) {
     if (index > project.layers.length - 1) return;
     project.layers[index].visible = true;
+    if (project.layers[index].run) project.layers[index].run();
     if (index > 0) project.layers[index - 1].visible = false;
 }
 
@@ -210,7 +266,7 @@ project.currentStyle.strokeColor = '#e4141b';
 
 let layers = {
     follow: vectorFieldLayer(() => arrow(new Point(0, 0), 5)),
-    sinXY: vectorFieldLayer(() => arrow(new Point(0, 0), 5)),
+    sinXY: vectorFieldLayer(() => dot(new Point(0, 0), 5)),
     sin: vectorFieldLayer(() => arrow(new Point(0, 0), 5)),
     pow: vectorFieldLayer(() => arrow(new Point(0, 0), 5)),
 };
@@ -223,6 +279,17 @@ layers.pow.setMouseFunction(mouseFunctions.pow);
 layers.pow.normalize = false;
 
 layers.sin.setAnimFunction(animFunctions.sin);
+
+let flow1 = new FlowSimulator(point => new Point(point.y + Math.random() * 2, -point.x + Math.random() * 2), 60);
+let circleSymbol = new SymbolDefinition(new Shape.Circle(UNIT_X, 5), new Point(0.2, 0));
+for (let i = 0; i < 20; i++) {
+    let placedCircle = circleSymbol.place(1,1);
+    let newParticle = particle(placedCircle, new Point(Math.random() * 5 - 2.5, Math.random() * 5 - 2.5));
+    flow1.particles.push(newParticle);
+    flow1.layer.addChild(newParticle);
+}
+flow1.timeScale = 5;
+setupLayer(flow1.layer);
 
 
 soloLayer(0);
