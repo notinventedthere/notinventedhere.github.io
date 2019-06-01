@@ -262,7 +262,7 @@ let layers = {
     follow: vectorFieldLayer(() => arrow(new Point(0, 0), 5)),
     sinXY: vectorFieldLayer(() => dot(new Point(0, 0), 5)),
     sin: vectorFieldLayer(() => arrow(new Point(0, 0), 5)),
-    flow1: new FlowSimulator(point => new Point(point.y + Math.random() * 2, -point.x + Math.random() * 2), 60)
+    flow1: new FlowSimulator(point => new Point(point.y, -point.x), 60)
 };
 
 layers.follow.setMouseFunction(mouseFunctions.follow);
