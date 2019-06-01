@@ -279,15 +279,11 @@ project.currentStyle.strokeWidth = 0.75;
 project.currentStyle.strokeColor = '#e4141b';
 
 let layers = {
-    follow: vectorFieldLayer(() => arrow(new Point(0, 0), 5)),
+    flow2: flowLayer('flow2', point => point, 300),
     sinXY: vectorFieldLayer(() => dot(new Point(0, 0), 5)),
     sin: vectorFieldLayer(() => arrow(new Point(0, 0), 5)),
     flow1: flowLayer('flow1', point => new Point(point.y, -point.x)),
-    flow2: flowLayer('flow2', point => point, 300)
 };
-
-layers.follow.setMouseFunction(mouseFunctions.follow);
-layers.follow.layer.name = 'follow';
 
 layers.sinXY.setMouseFunction(mouseFunctions.sinXY);
 layers.sinXY.layer.name = 'sinXY';
