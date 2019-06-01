@@ -276,9 +276,9 @@ layers.sin.layer.name = 'sin';
 
 layers.flow1.layer.name = 'flow1';
 let circleSymbol = new SymbolDefinition(new Shape.Circle(UNIT_X, 5), new Point(0.2, 0));
-for (let i = 0; i < 50; i++) {
+for (let i = 0; i < 100; i++) {
     let placedCircle = circleSymbol.place(1,1);
-    let newParticle = particle(placedCircle, new Point(Math.random() * 5 - 2.5, Math.random() * 5 - 2.5));
+    let newParticle = particle(placedCircle, new Point(Math.random() * 10 - 5, Math.random() * 10 - 5));
     layers.flow1.particles.push(newParticle);
     layers.flow1.layer.addChild(newParticle);
 }
