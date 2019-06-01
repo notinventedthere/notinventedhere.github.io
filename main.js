@@ -225,12 +225,12 @@ function flowLayer(name, flowFunction, particleN=100) {
         flowSim.particles.push(newParticle);
         flowSim.layer.addChild(newParticle);
     }
-    flowSim.timeScale = 2;
-    let flow1field = new VectorPlot(point => new Point(point.y, -point.x), 20, 20);
-    flow1field.fillWithPoints(20, () => arrow(new Point(0, 0), 5));
-    flow1field.calculate();
-    flowSim.layer.addChild(flow1field.layer);
+    let flowField = new VectorPlot(flowFunction, 20, 20);
+    flowField.fillWithPoints(20, () => arrow(new Point(0, 0), 5));
+    flowField.calculate();
+    flowSim.layer.addChild(flowField.layer);
     setupLayer(flowSim.layer);
+    flowSim.flowField = flowField;
     return flowSim;
 }
 
@@ -282,7 +282,8 @@ let layers = {
     follow: vectorFieldLayer(() => arrow(new Point(0, 0), 5)),
     sinXY: vectorFieldLayer(() => dot(new Point(0, 0), 5)),
     sin: vectorFieldLayer(() => arrow(new Point(0, 0), 5)),
-    flow1: flowLayer('flow1', point => new Point(point.y, -point.x))
+    flow1: flowLayer('flow1', point => new Point(point.y, -point.x)),
+    flow2: flowLayer('flow2', point => point, 300)
 };
 
 layers.follow.setMouseFunction(mouseFunctions.follow);
@@ -294,6 +295,17 @@ layers.sinXY.layer.name = 'sinXY';
 layers.sin.setAnimFunction(animFunctions.sin);
 layers.sin.layer.name = 'sin';
 
+layers.flow1.timeScale = 2;
 
 
-soloLayer(0);
+let flow2Timer = 0;
+layers.flow2.layer.onMouseMove = function(event) {
+    let vectorFunction = mouseFunctions.follow(event);
+    let flowFunction = point => vectorFunction(point) + new Point(Math.random() * 5 - 2.5, Math.random() * 5 - 2.5);
+    layers.flow2.vectorFunction = flowFunction;
+    layers.flow2.flowField.fun = vectorFunction;
+    layers.flow2.flowField.calculate();
+};
+
+
+soloLayer(4);
