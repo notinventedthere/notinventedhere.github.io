@@ -53,6 +53,10 @@ function cartesianMatrix(scaleFactor) {
                       view.center.x, view.center.y);
 }
 
+function randomVector(size) {
+    return UNIT_X.clone().rotate(Math.random() * 360 - 180) * (Math.random() * size);
+}
+
 function pointField(origin, width, height, density) {
     let field = [];
     for (let y = origin.y; y < origin.y + width; y += width / density) {
@@ -220,7 +224,7 @@ function flowLayer(name, flowFunction, particleN=100) {
     let circleSymbol = new SymbolDefinition(new Shape.Circle(UNIT_X, 4), new Point(0.2, 0));
     for (let i = 0; i < particleN; i++) {
         let placedCircle = circleSymbol.place(1,1);
-        let vector = UNIT_X.clone().rotate(Math.random() * 360 - 180) * (Math.random() * 10);
+        let vector = randomVector(10);
         let newParticle = particle(placedCircle, vector);
         flowSim.particles.push(newParticle);
         flowSim.layer.addChild(newParticle);
@@ -294,9 +298,13 @@ layers.sin.layer.name = 'sin';
 layers.flow1.timeScale = 2;
 
 
-let flow2Timer = 0;
 layers.flow2.layer.onMouseMove = function(event) {
     let vectorFunction = mouseFunctions.follow(event);
+    layers.flow2.particles.map(function(particle) {
+        if (vectorFunction(particle.point).length < 1) {
+            particle.point = event.point.transform(cartesianMatrix(35).invert()) + randomVector(9);
+        }
+    });
     let flowFunction = point => vectorFunction(point) + new Point(Math.random() * 5 - 2.5, Math.random() * 5 - 2.5);
     layers.flow2.vectorFunction = flowFunction;
     layers.flow2.flowField.fun = vectorFunction;
