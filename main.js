@@ -268,15 +268,11 @@ let layers = {
     follow: vectorFieldLayer(() => arrow(new Point(0, 0), 5)),
     sinXY: vectorFieldLayer(() => dot(new Point(0, 0), 5)),
     sin: vectorFieldLayer(() => arrow(new Point(0, 0), 5)),
-    pow: vectorFieldLayer(() => arrow(new Point(0, 0), 5)),
 };
 
 layers.follow.setMouseFunction(mouseFunctions.follow);
 
 layers.sinXY.setMouseFunction(mouseFunctions.sinXY);
-
-layers.pow.setMouseFunction(mouseFunctions.pow);
-layers.pow.normalize = false;
 
 layers.sin.setAnimFunction(animFunctions.sin);
 
