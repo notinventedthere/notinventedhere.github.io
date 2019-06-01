@@ -160,7 +160,7 @@ let animFunctions = {
 /* Flow */
 
 class FlowSimulator {
-    constructor(vectorFunction, timeStep, particles=[]) {
+    constructor(vectorFunction, timeStep=60, particles=[]) {
         this.vectorFunction = vectorFunction;
         this.timeStep = timeStep;
         this.timeScale = 1;
@@ -214,6 +214,26 @@ function vectorFieldLayer(vectorObjectFunction) {
     return vectorField;
 }
 
+function flowLayer(name, flowFunction, particleN=100) {
+    let flowSim = new FlowSimulator(flowFunction);
+    flowSim.layer.name = name;
+    let circleSymbol = new SymbolDefinition(new Shape.Circle(UNIT_X, 4), new Point(0.2, 0));
+    for (let i = 0; i < particleN; i++) {
+        let placedCircle = circleSymbol.place(1,1);
+        let vector = UNIT_X.clone().rotate(Math.random() * 360 - 180) * (Math.random() * 10);
+        let newParticle = particle(placedCircle, vector);
+        flowSim.particles.push(newParticle);
+        flowSim.layer.addChild(newParticle);
+    }
+    flowSim.timeScale = 2;
+    let flow1field = new VectorPlot(point => new Point(point.y, -point.x), 20, 20);
+    flow1field.fillWithPoints(20, () => arrow(new Point(0, 0), 5));
+    flow1field.calculate();
+    flowSim.layer.addChild(flow1field.layer);
+    setupLayer(flowSim.layer);
+    return flowSim;
+}
+
 function setupLayer(layer) {
     layer.visible = false;
     let background = new Shape.Rectangle(view.bounds);
@@ -262,7 +282,7 @@ let layers = {
     follow: vectorFieldLayer(() => arrow(new Point(0, 0), 5)),
     sinXY: vectorFieldLayer(() => dot(new Point(0, 0), 5)),
     sin: vectorFieldLayer(() => arrow(new Point(0, 0), 5)),
-    flow1: new FlowSimulator(point => new Point(point.y, -point.x), 60)
+    flow1: flowLayer('flow1', point => new Point(point.y, -point.x))
 };
 
 layers.follow.setMouseFunction(mouseFunctions.follow);
@@ -274,21 +294,6 @@ layers.sinXY.layer.name = 'sinXY';
 layers.sin.setAnimFunction(animFunctions.sin);
 layers.sin.layer.name = 'sin';
 
-layers.flow1.layer.name = 'flow1';
-let circleSymbol = new SymbolDefinition(new Shape.Circle(UNIT_X, 5), new Point(0.2, 0));
-for (let i = 0; i < 100; i++) {
-    let placedCircle = circleSymbol.place(1,1);
-    let vector = UNIT_X.clone().rotate(Math.random() * 360 - 180) * (Math.random() * 10);
-    let newParticle = particle(placedCircle, vector);
-    layers.flow1.particles.push(newParticle);
-    layers.flow1.layer.addChild(newParticle);
-}
-layers.flow1.timeScale = 2;
-let flow1field = new VectorPlot(point => new Point(point.y, -point.x), 20, 20);
-flow1field.fillWithPoints(20, () => arrow(new Point(0, 0), 5));
-flow1field.calculate();
-layers.flow1.layer.addChild(flow1field.layer);
-setupLayer(layers.flow1.layer);
 
 
 soloLayer(0);
