@@ -129,7 +129,8 @@ class VectorPlot {
 
 let functions = {
     pow2: point => new Point(Math.pow(point.x, 2), Math.pow(point.y, 2)),
-    unit: point => UNIT_X * 20
+    unit: point => UNIT_X * 20,
+    sinX: point => new Point(1, Math.sin(point.x))
 };
 
 let mouseFunctions = {
@@ -144,17 +145,12 @@ let mouseFunctions = {
     follow: function(event) {
         return point => event.point.transform(cartesianMatrix(35).invert()) - point;
     },
-    sin: function(event) {
-        return function(point) {
-            return new Point(20, 10 * Math.sin(point.x + event.point.x / 50));
-        };
-    }
 };
 
 let animFunctions = {
     sin: function(event) {
         return function(point) {
-            return new Point(20, 10 * Math.sin(point.x + event.time));
+            return new Point(0, 10 * Math.sin((point.x + event.time) * 2));
         };
     }
 };
@@ -171,12 +167,14 @@ class FlowSimulator {
         this.particles = particles;
         this.layer = new Layer(particles);
         this.running = false;
+        this.onFrameFunction = particle => undefined;
         let self = this;
         self.layer.onFrame = function(event) {
             if (self.running && self.ready(event)) {
                 for (let particle of self.particles) {
                     particle.point += particle.velocity * (self.timeScale / self.timeStep);
                     particle.velocity = self.vectorFunction(particle.point);
+                    self.onFrameFunction(particle);
                 }
             }
         };
@@ -210,9 +208,9 @@ function particle(item, startPosition=new Point(0, 0)) {
 
 /* Layer Management */
 
-function vectorFieldLayer(vectorObjectFunction) {
+function vectorFieldLayer(vectorObjectFunction, density=20) {
     let vectorField = new VectorPlot(functions.unit, 20, 20);
-    vectorField.fillWithPoints(20, vectorObjectFunction);
+    vectorField.fillWithPoints(density, vectorObjectFunction);
     vectorField.normalizeAmount = 15;
     setupLayer(vectorField.layer);
     return vectorField;
@@ -221,7 +219,8 @@ function vectorFieldLayer(vectorObjectFunction) {
 function flowLayer(name, flowFunction, particleN=100) {
     let flowSim = new FlowSimulator(flowFunction);
     flowSim.layer.name = name;
-    let circleSymbol = new SymbolDefinition(new Shape.Circle(UNIT_X, 4), new Point(0.2, 0));
+    let circleSymbol = new SymbolDefinition(new Shape.Circle(UNIT_X, 2), new Point(0.2, 0));
+    circleSymbol.item.fillColor = 'red';
     for (let i = 0; i < particleN; i++) {
         let placedCircle = circleSymbol.place(1,1);
         let vector = randomVector(10);
@@ -283,9 +282,10 @@ project.currentStyle.strokeWidth = 0.75;
 project.currentStyle.strokeColor = '#e4141b';
 
 let layers = {
+    flow3: flowLayer('flow3', functions.sinX),
     flow2: flowLayer('flow2', point => point, 300),
     sinXY: vectorFieldLayer(() => dot(new Point(0, 0), 5)),
-    sin: vectorFieldLayer(() => arrow(new Point(0, 0), 5)),
+    sin: vectorFieldLayer(() => dot(new Point(0, 0), 2), 80),
     flow1: flowLayer('flow1', point => new Point(point.y, -point.x)),
 };
 
@@ -293,6 +293,7 @@ layers.sinXY.setMouseFunction(mouseFunctions.sinXY);
 layers.sinXY.layer.name = 'sinXY';
 
 layers.sin.setAnimFunction(animFunctions.sin);
+layers.sin.normalize = false;
 layers.sin.layer.name = 'sin';
 
 layers.flow1.timeScale = 2;
@@ -309,6 +310,10 @@ layers.flow2.layer.onMouseMove = function(event) {
     layers.flow2.vectorFunction = flowFunction;
     layers.flow2.flowField.fun = vectorFunction;
     layers.flow2.flowField.calculate();
+};
+
+layers.flow3.onFrameFunction = function(particle) {
+    if (particle.point.x >= 10) particle.point = new Point(-10, Math.random() * 10 - 5);
 };
 
 
