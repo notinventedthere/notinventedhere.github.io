@@ -67,18 +67,30 @@ function pointField(origin, width, height, density) {
     return field;
 }
 
-class VectorPlot {
-    constructor(fun, width, height) {
-        this.fun = fun;
-        this.width = width;
-        this.height = height;
+class VectorField {
+    constructor(vectorFunction, zones=new Map()) {
+        this.vectorFunction = vectorFunction;
+        this.zones = zones;
+    }
+
+    vectorAt(point) {
+        for (let [zone, vectorFunction] of this.zones.entries()) {
+            if (zone.contains(point)) return vectorFunction(point);
+        }
+        return this.vectorFunction(point);
+    }
+}
+
+class VectorPlotter {
+    constructor(vectorField) {
+        this.vectorField = vectorField;
 
         this.normalize = true;
         this.normalizeAmount = 20;
-        this.scaleFactor = 35;
+        this.matrix = cartesianMatrix(35);
 
         this.points = new Map();
-        this.layer = new Layer(this.points.values());
+        this.group = new Group(this.points.values());
         this.running = false;
     }
 
@@ -86,7 +98,8 @@ class VectorPlot {
         let entries = this.points.entries();
         for (let entry of entries) {
             let point = entry[0];
-            let vector = this.fun(point).transform(new Matrix(1, 0, 0, -1, 0, 0));
+            let vector = this.vectorField.vectorAt(point)
+                .transform(new Matrix(1, 0, 0, -1, 0, 0));
             if (this.normalize) vector = vector.normalize(this.normalizeAmount);
             let vectorObject = entry[1];
             vectorObject.update(vector);
@@ -95,35 +108,17 @@ class VectorPlot {
 
     addPoint(point, vectorObject){
         let v = vectorObject();
-        v.position = point.transform(cartesianMatrix(this.scaleFactor));
+        v.position = point.transform(this.matrix);
 
         this.points.set(point, v);
     }
 
-    fillWithPoints(density, vectorObject) {
-        let new_points = pointField(new Point(- this.width / 2, - this.height / 2),
-                                    this.width, this.height, density);
+    fillWithPoints(width, height, density, vectorObject) {
+        let new_points = pointField(new Point(- width / 2, - height / 2),
+                                    width, height, density);
         for (let point of new_points) {
             this.addPoint(point, vectorObject);
         }
-    }
-
-    setMouseFunction(f) {
-        let self = this;
-        this.layer.onMouseMove = function(event) {
-            if (!self.running) return;
-            self.fun = f(event);
-            self.calculate();
-        };
-    }
-
-    setAnimFunction(f) {
-        let self = this;
-        this.layer.onFrame = function(event) {
-            if (!self.running) return;
-            self.fun = f(event);
-            self.calculate();
-        };
     }
 }
 
@@ -159,26 +154,26 @@ let animFunctions = {
 
 /* Flow */
 
-class FlowSimulator {
-    constructor(vectorFunction, timeStep=60, particles=[]) {
-        this.vectorFunction = vectorFunction;
+class ParticleMover {
+    constructor(particles=[], timeStep=60) {
         this.timeStep = timeStep;
         this.timeScale = 1;
         this.particles = particles;
-        this.layer = new Layer(particles);
+        this.group = new Group(particles);
+
         this.running = false;
-        this.onFrameFunction = particle => undefined;
+        this.remainingTime = 0;
         let self = this;
-        self.layer.onFrame = function(event) {
+        self.group.onFrame = function(event) {
             if (self.running && self.ready(event)) {
                 for (let particle of self.particles) {
                     particle.point += particle.velocity * (self.timeScale / self.timeStep);
-                    particle.velocity = self.vectorFunction(particle.point);
-                    self.onFrameFunction(particle);
+                    if (self.vectorField) {
+                        particle.velocity = self.vectorField.vectorAt(particle.point);
+                    }
                 }
             }
         };
-        this.remainingTime = 0;
     }
 
     ready(event) {
@@ -208,51 +203,31 @@ function particle(item, startPosition=new Point(0, 0)) {
 
 /* Layer Management */
 
-function vectorFieldLayer(vectorObjectFunction, density=20) {
-    let vectorField = new VectorPlot(functions.unit, 20, 20);
-    vectorField.fillWithPoints(density, vectorObjectFunction);
-    vectorField.normalizeAmount = 15;
-    setupLayer(vectorField.layer);
-    return vectorField;
-}
-
-function flowLayer(name, flowFunction, particleN=100) {
-    let flowSim = new FlowSimulator(flowFunction);
-    flowSim.layer.name = name;
-    let circleSymbol = new SymbolDefinition(new Shape.Circle(UNIT_X, 2), new Point(0.2, 0));
-    circleSymbol.item.fillColor = 'red';
-    for (let i = 0; i < particleN; i++) {
-        let placedCircle = circleSymbol.place(1,1);
-        let vector = randomVector(10);
-        let newParticle = particle(placedCircle, vector);
-        flowSim.particles.push(newParticle);
-        flowSim.layer.addChild(newParticle);
-    }
-    let flowField = new VectorPlot(flowFunction, 20, 20);
-    flowField.fillWithPoints(20, () => arrow(new Point(0, 0), 5));
-    flowField.calculate();
-    flowSim.layer.addChild(flowField.layer);
-    setupLayer(flowSim.layer);
-    flowSim.flowField = flowField;
-    return flowSim;
-}
-
-function setupLayer(layer) {
+function newVectorLayer(name, vectorField, backgroundColor='white') {
+    let layer = new Layer();
+    layer.name = name;
     layer.visible = false;
     let background = new Shape.Rectangle(view.bounds);
-    background.fillColor = 'white';
-    layer.addChild(background);
-    background.sendToBack();
-    return layer;
+    background.fillColor = backgroundColor;
+
+    let vectorPlotter = new VectorPlotter(vectorField);
+    let particleMover = new ParticleMover();
+    particleMover.vectorField = vectorField;
+
+    return {layer, vectorPlotter, particleMover};
 }
 
 function soloLayer(index) {
     if (index > project.layers.length - 1) return;
     project.layers[index].visible = true;
-    layers[project.layers[index].name].running = true;
+    let items = layers[project.layers[index].name];
+    items.vectorPlotter.running = true;
+    items.particleMover.running = true;
     if (index > 0) {
         project.layers[index - 1].visible = false;
-        layers[project.layers[index - 1].name].running = false;
+        let items = layers[project.layers[index - 1].name];
+        items.vectorPlotter.running = false;
+        items.particleMover.running = false;
     }
 }
 
@@ -278,43 +253,77 @@ function onMouseDown(event) {
 
 /* Page Setup */
 
+function defaults(vectorPlotter, vectorObjectFunction, density=20,
+                  particleMover=undefined, particleN=100) {
+    vectorPlotter.fillWithPoints(20, 20, density, vectorObjectFunction);
+    vectorPlotter.normalizeAmount = 15;
+    vectorPlotter.calculate();
+
+    if (particleMover) {
+        let circleSymbol = new SymbolDefinition(new Shape.Circle(UNIT_X, 2), new Point(0.2, 0));
+        circleSymbol.item.fillColor = 'red';
+        for (let i = 0; i < particleN; i++) {
+            let placedCircle = circleSymbol.place(1,1);
+            let vector = randomVector(10);
+            let newParticle = particle(placedCircle, vector);
+            particleMover.particles.push(newParticle);
+            particleMover.group.addChild(newParticle);
+        }
+    }
+}
+
 project.currentStyle.strokeWidth = 0.75;
 project.currentStyle.strokeColor = '#e4141b';
 
-let layers = {
-    flow3: flowLayer('flow3', functions.sinX),
-    flow2: flowLayer('flow2', point => point, 300),
-    sinXY: vectorFieldLayer(() => dot(new Point(0, 0), 5)),
-    sin: vectorFieldLayer(() => dot(new Point(0, 0), 2), 80),
-    flow1: flowLayer('flow1', point => new Point(point.y, -point.x)),
-};
+/* layers */
 
-layers.sinXY.setMouseFunction(mouseFunctions.sinXY);
-layers.sinXY.layer.name = 'sinXY';
-
-layers.sin.setAnimFunction(animFunctions.sin);
-layers.sin.normalize = false;
-layers.sin.layer.name = 'sin';
-
-layers.flow1.timeScale = 2;
-
-
-layers.flow2.layer.onMouseMove = function(event) {
-    let vectorFunction = mouseFunctions.follow(event);
-    layers.flow2.particles.map(function(particle) {
-        if (vectorFunction(particle.point).length < 1) {
-            particle.point = event.point.transform(cartesianMatrix(35).invert()) + randomVector(9);
+let flow1 = newVectorLayer('flow1', new VectorField(functions.sinX));
+defaults(flow1.vectorPlotter, () => arrow(new Point(0, 0), 5), 20, flow1.particleMover);
+flow1.layer.onFrame = function(event) {
+    flow1.particleMover.particles.map(function(particle) {
+        if (particle.point.x >= 10) {
+            particle.point = new Point(-10, Math.random() * 10 - 5);
         }
     });
+};
+
+let flow2 = newVectorLayer('flow2', new VectorField(point => point));
+flow2.vectorPlotter.vectorField = new VectorField(point => point);
+defaults(flow2.vectorPlotter, () => arrow(new Point(0, 0), 5), 20, flow2.particleMover, 300);
+flow2.layer.onMouseMove = function(event) {
+    let vectorFunction = mouseFunctions.follow(event);
     let flowFunction = point => vectorFunction(point) + new Point(Math.random() * 5 - 2.5, Math.random() * 5 - 2.5);
-    layers.flow2.vectorFunction = flowFunction;
-    layers.flow2.flowField.fun = vectorFunction;
-    layers.flow2.flowField.calculate();
+    flow2.particleMover.vectorField.vectorFunction = flowFunction;
+    flow2.vectorPlotter.vectorField.vectorFunction = vectorFunction;
+    flow2.vectorPlotter.calculate();
+
+    flow2.layer.onFrame = function() {
+        flow2.particleMover.particles.map(function(particle) {
+            if (flow2.vectorPlotter.vectorField.vectorAt(particle.point).length < 1) {
+                particle.point = event.point.transform(cartesianMatrix(35).invert()) + randomVector(9);
+            }
+        });
+    };
 };
 
-layers.flow3.onFrameFunction = function(particle) {
-    if (particle.point.x >= 10) particle.point = new Point(-10, Math.random() * 10 - 5);
+let layers = {
+    flow1,
+    flow2,
+    // sinXY: vectorFieldLayer(() => dot(new Point(0, 0), 5)),
+    // sin: vectorFieldLayer(() => dot(new Point(0, 0), 2), 80),
+    // flow1: flowLayer('flow1', point => new Point(point.y, -point.x)),
 };
 
+// layers.sinXY.setMouseFunction(mouseFunctions.sinXY);
+// layers.sinXY.layer.name = 'sinXY';
 
-soloLayer(0);
+// layers.sin.setAnimFunction(animFunctions.sin);
+// layers.sin.normalize = false;
+// layers.sin.layer.name = 'sin';
+
+// layers.flow1.timeScale = 2;
+
+
+
+
+soloLayer(1);
