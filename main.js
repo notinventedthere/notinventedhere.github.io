@@ -253,32 +253,33 @@ function onMouseDown(event) {
 
 /* Page Setup */
 
-function defaults(vectorPlotter, vectorObjectFunction, density=20,
-                  particleMover=undefined, particleN=100) {
-    vectorPlotter.fillWithPoints(20, 20, density, vectorObjectFunction);
-    vectorPlotter.normalizeAmount = 15;
-    vectorPlotter.calculate();
-
-    if (particleMover) {
-        let circleSymbol = new SymbolDefinition(new Shape.Circle(UNIT_X, 2), new Point(0.2, 0));
-        circleSymbol.item.fillColor = 'red';
-        for (let i = 0; i < particleN; i++) {
-            let placedCircle = circleSymbol.place(1,1);
-            let vector = randomVector(10);
-            let newParticle = particle(placedCircle, vector);
-            particleMover.particles.push(newParticle);
-            particleMover.group.addChild(newParticle);
-        }
-    }
-}
 
 project.currentStyle.strokeWidth = 0.75;
 project.currentStyle.strokeColor = '#e4141b';
 
+function plotterSetup(vectorPlotter, vectorObjectFunction, density=20) {
+    vectorPlotter.fillWithPoints(20, 20, density, vectorObjectFunction);
+    vectorPlotter.normalizeAmount = 15;
+    vectorPlotter.calculate();
+}
+
+function moverSetup(particleMover, particleN=100) {
+    let circleSymbol = new SymbolDefinition(new Shape.Circle(UNIT_X, 2), new Point(0.2, 0));
+    circleSymbol.item.fillColor = 'red';
+    for (let i = 0; i < particleN; i++) {
+        let placedCircle = circleSymbol.place(1,1);
+        let vector = randomVector(10);
+        let newParticle = particle(placedCircle, vector);
+        particleMover.particles.push(newParticle);
+        particleMover.group.addChild(newParticle);
+    }
+}
+
 /* layers */
 
 let flow1 = newVectorLayer('flow1', new VectorField(functions.sinX));
-defaults(flow1.vectorPlotter, () => arrow(new Point(0, 0), 5), 20, flow1.particleMover);
+plotterSetup(flow1.vectorPlotter, () => arrow(new Point(0, 0), 5), 20);
+moverSetup(flow1.particleMover);
 flow1.layer.onFrame = function(event) {
     flow1.particleMover.particles.map(function(particle) {
         if (particle.point.x >= 10) {
@@ -289,7 +290,8 @@ flow1.layer.onFrame = function(event) {
 
 let flow2 = newVectorLayer('flow2', new VectorField(point => point));
 flow2.vectorPlotter.vectorField = new VectorField(point => point);
-defaults(flow2.vectorPlotter, () => arrow(new Point(0, 0), 5), 20, flow2.particleMover, 300);
+plotterSetup(flow2.vectorPlotter, () => arrow(new Point(0, 0), 5), 20);
+moverSetup(flow2.particleMover, 300);
 flow2.layer.onMouseMove = function(event) {
     let vectorFunction = mouseFunctions.follow(event);
     let flowFunction = point => vectorFunction(point) + new Point(Math.random() * 5 - 2.5, Math.random() * 5 - 2.5);
@@ -306,11 +308,18 @@ flow2.layer.onMouseMove = function(event) {
     };
 };
 
+let sin = newVectorLayer('sin', new VectorField(point => point));
+plotterSetup(sin.vectorPlotter, () => dot(new Point(0, 0), 3), 80);
+sin.vectorPlotter.normalize = false;
+sin.layer.onFrame = function(event) {
+    sin.vectorPlotter.vectorField.vectorFunction = animFunctions.sin(event);
+    sin.vectorPlotter.calculate();
+};
+
 let layers = {
     flow1,
     flow2,
-    // sinXY: vectorFieldLayer(() => dot(new Point(0, 0), 5)),
-    // sin: vectorFieldLayer(() => dot(new Point(0, 0), 2), 80),
+    sin,
     // flow1: flowLayer('flow1', point => new Point(point.y, -point.x)),
 };
 
@@ -326,4 +335,4 @@ let layers = {
 
 
 
-soloLayer(1);
+soloLayer(2);
