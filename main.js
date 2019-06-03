@@ -316,11 +316,23 @@ sin.layer.onFrame = function(event) {
     sin.vectorPlotter.calculate();
 };
 
+let flow3 = newVectorLayer('flow3', new VectorField(point => new Point(Math.pow(point.y, 2), Math.pow(-point.x, 2))));
+plotterSetup(flow3.vectorPlotter, () => arrow(new Point(0, 0), 5));
+moverSetup(flow3.particleMover, 300);
+flow3.particleMover.timeScale = 1;
+flow3.layer.onFrame = function(event) {
+    flow3.particleMover.particles.map(function(particle) {
+        if (particle.point.x >= 10 || particle.point.y >= 10) {
+            particle.point = new Point(-15, -15) + Point.random() * 10;
+        }
+    });
+};
+
 let layers = {
     flow1,
     flow2,
     sin,
-    // flow1: flowLayer('flow1', point => new Point(point.y, -point.x)),
+    flow3,
 };
 
 // layers.sinXY.setMouseFunction(mouseFunctions.sinXY);
@@ -335,4 +347,4 @@ let layers = {
 
 
 
-soloLayer(2);
+soloLayer(0);
