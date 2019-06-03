@@ -280,12 +280,15 @@ function moverSetup(particleMover, particleN=100) {
 let flow1 = newVectorLayer('flow1', new VectorField(functions.sinX));
 plotterSetup(flow1.vectorPlotter, () => arrow(new Point(0, 0), 5), 20);
 moverSetup(flow1.particleMover);
+flow1.particleMover.timeScale = 2;
 flow1.layer.onFrame = function(event) {
-    flow1.particleMover.particles.map(function(particle) {
-        if (particle.point.x >= 10) {
-            particle.point = new Point(-10, Math.random() * 10 - 5);
-        }
-    });
+    if (flow1.particleMover.running) {
+        flow1.particleMover.particles.map(function(particle) {
+            if (particle.point.x >= 10) {
+                particle.point = new Point(-10, Math.random() * 10 - 5);
+            }
+        });
+    }
 };
 
 let flow2 = newVectorLayer('flow2', new VectorField(point => point));
@@ -319,13 +322,15 @@ sin.layer.onFrame = function(event) {
 let flow3 = newVectorLayer('flow3', new VectorField(point => new Point(Math.pow(point.y, 2), Math.pow(-point.x, 2))));
 plotterSetup(flow3.vectorPlotter, () => arrow(new Point(0, 0), 5));
 moverSetup(flow3.particleMover, 300);
-flow3.particleMover.timeScale = 1;
+flow3.particleMover.timeScale = 0.5;
 flow3.layer.onFrame = function(event) {
-    flow3.particleMover.particles.map(function(particle) {
-        if (particle.point.x >= 10 || particle.point.y >= 10) {
-            particle.point = new Point(-15, -15) + Point.random() * 10;
-        }
-    });
+    if (flow3.particleMover.running) {
+        flow3.particleMover.particles.map(function(particle) {
+            if (particle.point.x >= 10 || particle.point.y >= 10) {
+                particle.point = new Point(-15, -15) + Point.random() * 10;
+            }
+        });
+    }
 };
 
 let layers = {
