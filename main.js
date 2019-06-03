@@ -325,8 +325,10 @@ let colorDot = function() {
 plotterSetup(sin.vectorPlotter, colorDot, 80);
 sin.vectorPlotter.normalize = false;
 sin.layer.onFrame = function(event) {
-    sin.vectorPlotter.vectorField.vectorFunction = animFunctions.sin(event);
-    sin.vectorPlotter.calculate();
+    if (sin.vectorPlotter.running) {
+        sin.vectorPlotter.vectorField.vectorFunction = animFunctions.sin(event);
+        sin.vectorPlotter.calculate();
+    }
 };
 
 let flow3 = newVectorLayer('flow3', new VectorField(point => new Point(Math.pow(point.y, 2), Math.pow(-point.x, 2))));
