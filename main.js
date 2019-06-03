@@ -312,7 +312,17 @@ flow2.layer.onMouseMove = function(event) {
 };
 
 let sin = newVectorLayer('sin', new VectorField(point => point));
-plotterSetup(sin.vectorPlotter, () => dot(new Point(0, 0), 3), 80);
+let colorDot = function() {
+    let colorDot = dot(new Point(0, 0), 3);
+    colorDot.update = function(vector) {
+        this.fillColor = new Color(`hsl(315, 99%, ${100 - Math.abs(vector.y * 5)}%)`);
+        this.position = this.position - this.vector + vector;
+        this.vector = vector;
+        this.rotation = vector.angle;
+    };
+    return colorDot;
+};
+plotterSetup(sin.vectorPlotter, colorDot, 80);
 sin.vectorPlotter.normalize = false;
 sin.layer.onFrame = function(event) {
     sin.vectorPlotter.vectorField.vectorFunction = animFunctions.sin(event);
@@ -326,7 +336,7 @@ flow3.particleMover.timeScale = 0.25;
 flow3.layer.onFrame = function(event) {
     if (flow3.particleMover.running) {
         flow3.particleMover.particles.map(function(particle) {
-            if (particle.point.x >= 10 || particle.point.y >= 10) {
+            if (particle.point.x >= 15 || particle.point.y >= 15) {
                 particle.point = new Point(-15, -15) + Point.random() * 5;
             }
         });
