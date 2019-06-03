@@ -257,9 +257,9 @@ function onMouseDown(event) {
 project.currentStyle.strokeWidth = 0.75;
 project.currentStyle.strokeColor = '#e4141b';
 
-function plotterSetup(vectorPlotter, vectorObjectFunction, density=20) {
+function plotterSetup(vectorPlotter, vectorObjectFunction, density=20, normAmount=15) {
     vectorPlotter.fillWithPoints(20, 20, density, vectorObjectFunction);
-    vectorPlotter.normalizeAmount = 15;
+    vectorPlotter.normalizeAmount = normAmount;
     vectorPlotter.calculate();
 }
 
@@ -278,7 +278,7 @@ function moverSetup(particleMover, particleN=100) {
 /* layers */
 
 let flow1 = newVectorLayer('flow1', new VectorField(functions.sinX));
-plotterSetup(flow1.vectorPlotter, () => arrow(new Point(0, 0), 5), 20);
+plotterSetup(flow1.vectorPlotter, () => arrow(new Point(0, 0), 5), 40, 10);
 moverSetup(flow1.particleMover);
 flow1.particleMover.timeScale = 2;
 flow1.layer.onFrame = function(event) {
@@ -322,12 +322,12 @@ sin.layer.onFrame = function(event) {
 let flow3 = newVectorLayer('flow3', new VectorField(point => new Point(Math.pow(point.y, 2), Math.pow(-point.x, 2))));
 plotterSetup(flow3.vectorPlotter, () => arrow(new Point(0, 0), 5));
 moverSetup(flow3.particleMover, 300);
-flow3.particleMover.timeScale = 0.5;
+flow3.particleMover.timeScale = 0.25;
 flow3.layer.onFrame = function(event) {
     if (flow3.particleMover.running) {
         flow3.particleMover.particles.map(function(particle) {
             if (particle.point.x >= 10 || particle.point.y >= 10) {
-                particle.point = new Point(-15, -15) + Point.random() * 10;
+                particle.point = new Point(-15, -15) + Point.random() * 5;
             }
         });
     }
