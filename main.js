@@ -86,7 +86,8 @@ class VectorPlotter {
         this.vectorField = vectorField;
 
         this.normalize = true;
-        this.normalizeAmount = 20;
+        this.normalizeAmount = 15;
+
         this.matrix = cartesianMatrix(35);
 
         this.points = new Map();
@@ -100,7 +101,13 @@ class VectorPlotter {
             let point = entry[0];
             let vector = this.vectorField.vectorAt(point)
                 .transform(new Matrix(1, 0, 0, -1, 0, 0));
-            if (this.normalize) vector = vector.normalize(this.normalizeAmount);
+            if (this.normalize) {
+                if (this.vectorMaximum && vector.length <= this.vectorMaximum) {
+                    vector = vector * (this.normalizeAmount / this.vectorMaximum);
+                } else {
+                    vector = vector.normalize(this.normalizeAmount);
+                }
+            }
             let vectorObject = entry[1];
             vectorObject.update(vector);
         }
@@ -125,7 +132,7 @@ class VectorPlotter {
 let functions = {
     pow2: point => new Point(Math.pow(point.x, 2), Math.pow(point.y, 2)),
     unit: point => UNIT_X * 20,
-    sinX: point => new Point(1, Math.sin(point.x))
+    sinX: point => new Point(Math.sin(point.y), -Math.sin(point.x))
 };
 
 let mouseFunctions = {
@@ -278,6 +285,8 @@ function moverSetup(particleMover, particleN=100) {
 /* layers */
 
 let flow1 = newVectorLayer('flow1', new VectorField(functions.sinX));
+flow1.vectorPlotter.vectorField = new VectorField(functions.sinX);
+flow1.vectorPlotter.vectorMaximum = 1;
 plotterSetup(flow1.vectorPlotter, () => arrow(new Point(0, 0), 5), 40, 10);
 moverSetup(flow1.particleMover);
 flow1.particleMover.timeScale = 2;
@@ -331,7 +340,9 @@ sin.layer.onFrame = function(event) {
     }
 };
 
-let flow3 = newVectorLayer('flow3', new VectorField(point => new Point(Math.pow(point.y, 2), Math.pow(-point.x, 2))));
+let flow3Fun = point => new Point(Math.pow(point.y, 2), Math.pow(-point.x, 2));
+let flow3 = newVectorLayer('flow3', new VectorField(flow3Fun));
+flow3.vectorPlotter.vectorMaximum = 30;
 plotterSetup(flow3.vectorPlotter, () => arrow(new Point(0, 0), 5));
 moverSetup(flow3.particleMover, 300);
 flow3.particleMover.timeScale = 0.25;
