@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
         <style type="text/css">
          html,
          body {
@@ -12,15 +13,57 @@
          /* Scale canvas with resize attribute to full size */
          canvas[resize] {
              width: 100%;
-             height: 100%;
+             height: 90%;
+         }
+
+         a.button1{
+             display: inline-block;
+             padding: 0.35em 1.2em;
+             border: 0.1em solid #000000;
+             margin: 0 0.3em 0.3em 0;
+             border-radius: 0.12em;
+             box-sizing:  border-box;
+             text-decoration: none;
+             font-family: 'Roboto',sans-serif;
+             font-weight: 300;
+             color: #000000;
+             text-align: center;
+             transition: all 0.2s;
+         }
+         a.button1:hover{
+             color: #FFFFFF;
+             background-color: #000000;
+         }
+         @media all and (max-width: 30em){
+             a.button1{
+                 display: block;
+                 margin: 0.4em auto;
+             }
+         }
+
+         div.belowControls {
+             padding: 0.5em;
+             text-align: center;
          }
         </style>
         <script src='https://cdnjs.cloudflare.com/ajax/libs/acorn/5.1.1/acorn.js'></script>
         <script type="text/javascript" src="paper-full.js"></script>
-        <script type="text/paperscript" src="main.js" canvas="mainCanvas">
+        <script type="text/paperscript" src="main.js" canvas="mainCanvas"></script>
+        <script type="text/javascript">
+            window.onload = function() {
+                document.getElementById('next').onclick =
+                    () => window.globals.layerManager.next();
+                document.getElementById('prev').onclick =
+                    () => window.globals.layerManager.prev();
+            }
         </script>
     </head>
     <body>
         <canvas id="mainCanvas" resize="true"></canvas>
+        <br>
+        <div class="belowControls">
+            <a class="button1" id="prev"><- prev</a>
+            <a class="button1" id="next">next -></a>
+        </div>
     </body>
 </html>

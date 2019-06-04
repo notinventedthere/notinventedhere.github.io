@@ -228,36 +228,35 @@ function newVectorLayer(name, vectorField, backgroundColor='white') {
 }
 
 function soloLayer(index) {
-    if (index > project.layers.length - 1) return;
-    project.layers[index].visible = true;
-    let items = layers[project.layers[index].name];
-    items.vectorPlotter.running = true;
-    items.particleMover.running = true;
-    if (index > 0) {
-        project.layers[index - 1].visible = false;
-        let items = layers[project.layers[index - 1].name];
+    if (!project.layers[index]) return;
+
+    project.layers.map(function(layer) {
+        let items = layers[layer.name];
+        items.layer.visible = false;
         items.vectorPlotter.running = false;
         items.particleMover.running = false;
-    }
+    });
+    let items = layers[project.layers[index].name];
+    items.layer.visible = true;
+    items.vectorPlotter.running = true;
+    items.particleMover.running = true;
 }
 
 let layerManager = {
     index: 0,
     next: function() {
-        this.index++;
+        if (this.index < project.layers.length - 1) this.index++;
         soloLayer(this.index);
     },
     prev: function() {
-        this.index--;
+        if (this.index > 0) this.index--;
         soloLayer(this.index);
     }
 };
 
-function onMouseDown(event) {
-    layerManager.next();
-}
-
-
+// for access from javascript
+window.globals = {};
+window.globals.layerManager = layerManager;
 
 
 
