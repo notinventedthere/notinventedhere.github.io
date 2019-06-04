@@ -136,18 +136,20 @@ let functions = {
 };
 
 let mouseFunctions = {
-    sinXY: function(event) {
+    follow: function(event) {
         return function(point) {
-            point = (event.point / 20) - point;
-            point.x = Math.sin(point.x);
-            point.y = Math.sin(point.y);
-            return point;
+            let distance = event.point.transform(cartesianMatrix(35).invert()) - point;
+            let angle = curveAngle(distance, 10);
+            distance.angle = angle;
+            return distance;
         };
     },
-    follow: function(event) {
-        return point => event.point.transform(cartesianMatrix(35).invert()) - point;
-    },
 };
+
+function curveAngle(distanceVector, angleDelta) {
+    let middle = distanceVector.length / 2;
+    return distanceVector.angle + (middle * angleDelta);
+}
 
 let animFunctions = {
     sin: function(event) {
@@ -307,8 +309,7 @@ plotterSetup(flow2.vectorPlotter, () => arrow(new Point(0, 0), 5), 20);
 moverSetup(flow2.particleMover, 300);
 flow2.layer.onMouseMove = function(event) {
     let vectorFunction = mouseFunctions.follow(event);
-    let flowFunction = point => vectorFunction(point) + new Point(Math.random() * 5 - 2.5, Math.random() * 5 - 2.5);
-    flow2.particleMover.vectorField.vectorFunction = flowFunction;
+    flow2.particleMover.vectorField.vectorFunction = vectorFunction;
     flow2.vectorPlotter.vectorField.vectorFunction = vectorFunction;
     flow2.vectorPlotter.calculate();
 
