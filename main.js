@@ -139,7 +139,7 @@ let mouseFunctions = {
     follow: function(event) {
         return function(point) {
             let distance = event.point.transform(cartesianMatrix(35).invert()) - point;
-            let angle = curveAngle(distance, 10);
+            let angle = curveAngle(distance, 60);
             distance.angle = angle;
             return distance;
         };
@@ -285,6 +285,13 @@ function moverSetup(particleMover, particleN=100) {
     }
 }
 
+function particleWindowRespawn(particle, spawnLocation=new Point(0, 0), radius=5) {
+    if (particle.point.x >= 15 || particle.point.y >= 15
+        || particle.point.x <= -15 || particle.point.y <= -15) {
+        particle.point = spawnLocation + Point.random() * radius;
+    }
+}
+
 /* layers */
 
 let flow1 = newVectorLayer('flow1', new VectorField(functions.sinX));
@@ -313,10 +320,13 @@ flow2.layer.onMouseMove = function(event) {
     flow2.vectorPlotter.vectorField.vectorFunction = vectorFunction;
     flow2.vectorPlotter.calculate();
 
+    let mousePoint = event.point.transform(cartesianMatrix(35).invert());
     flow2.layer.onFrame = function() {
+        if (!flow2.particleMover.running) return;
         flow2.particleMover.particles.map(function(particle) {
+            particleWindowRespawn(particle, mousePoint);
             if (flow2.vectorPlotter.vectorField.vectorAt(particle.point).length < 1) {
-                particle.point = event.point.transform(cartesianMatrix(35).invert()) + randomVector(9);
+                particle.point = mousePoint + randomVector(9);
             }
         });
     };
@@ -351,9 +361,7 @@ flow3.particleMover.timeScale = 0.25;
 flow3.layer.onFrame = function(event) {
     if (flow3.particleMover.running) {
         flow3.particleMover.particles.map(function(particle) {
-            if (particle.point.x >= 15 || particle.point.y >= 15) {
-                particle.point = new Point(-15, -15) + Point.random() * 5;
-            }
+            particleWindowRespawn(particle, new Point(-15, -15));
         });
     }
 };
