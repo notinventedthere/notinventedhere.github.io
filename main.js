@@ -312,6 +312,7 @@ flow1.layer.onFrame = function(event) {
 
 let flow2 = newVectorLayer('flow2', new VectorField(point => point));
 flow2.vectorPlotter.vectorField = new VectorField(point => point);
+flow2.vectorPlotter.vectorMaximum = 3;
 plotterSetup(flow2.vectorPlotter, () => arrow(new Point(0, 0), 5), 20);
 moverSetup(flow2.particleMover, 300);
 flow2.layer.onMouseMove = function(event) {
@@ -325,7 +326,7 @@ flow2.layer.onMouseMove = function(event) {
         if (!flow2.particleMover.running) return;
         flow2.particleMover.particles.map(function(particle) {
             particleWindowRespawn(particle, mousePoint);
-            if (flow2.vectorPlotter.vectorField.vectorAt(particle.point).length < 1) {
+            if (flow2.vectorPlotter.vectorField.vectorAt(particle.point).length < 0.2) {
                 particle.point = mousePoint + randomVector(9);
             }
         });
@@ -372,16 +373,6 @@ let layers = {
     sin,
     flow3,
 };
-
-// layers.sinXY.setMouseFunction(mouseFunctions.sinXY);
-// layers.sinXY.layer.name = 'sinXY';
-
-// layers.sin.setAnimFunction(animFunctions.sin);
-// layers.sin.normalize = false;
-// layers.sin.layer.name = 'sin';
-
-// layers.flow1.timeScale = 2;
-
 
 
 
