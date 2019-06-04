@@ -132,7 +132,7 @@ class VectorPlotter {
 let functions = {
     pow2: point => new Point(Math.pow(point.x, 2), Math.pow(point.y, 2)),
     unit: point => UNIT_X * 20,
-    sinX: point => new Point(Math.sin(point.y), -Math.sin(point.x))
+    sinX: point => new Point(2 * Math.sin(point.y), 2 * -Math.sin(point.x))
 };
 
 let mouseFunctions = {
@@ -152,7 +152,8 @@ let mouseFunctions = {
 let animFunctions = {
     sin: function(event) {
         return function(point) {
-            return new Point(0, 10 * Math.sin((point.x + event.time) * 2));
+            return new Point(10 * Math.sin((point.y * (event.time / 10) + event.time) * 2),
+                             10 * Math.sin((point.x * (event.time / 10) + event.time) * 2));
         };
     }
 };
@@ -286,7 +287,7 @@ function moverSetup(particleMover, particleN=100) {
 
 let flow1 = newVectorLayer('flow1', new VectorField(functions.sinX));
 flow1.vectorPlotter.vectorField = new VectorField(functions.sinX);
-flow1.vectorPlotter.vectorMaximum = 1;
+flow1.vectorPlotter.vectorMaximum = 2;
 plotterSetup(flow1.vectorPlotter, () => arrow(new Point(0, 0), 5), 40, 10);
 moverSetup(flow1.particleMover);
 flow1.particleMover.timeScale = 2;
@@ -324,14 +325,14 @@ let sin = newVectorLayer('sin', new VectorField(point => point));
 let colorDot = function() {
     let colorDot = dot(new Point(0, 0), 3);
     colorDot.update = function(vector) {
-        this.fillColor = new Color(`hsl(315, 99%, ${100 - Math.abs(vector.y * 5)}%)`);
+        this.fillColor = new Color(`hsl(315, 99%, ${100 - Math.abs(vector.y * 2) - Math.abs(vector.x * 2)}%)`);
         this.position = this.position - this.vector + vector;
         this.vector = vector;
         this.rotation = vector.angle;
     };
     return colorDot;
 };
-plotterSetup(sin.vectorPlotter, colorDot, 80);
+plotterSetup(sin.vectorPlotter, colorDot, 40);
 sin.vectorPlotter.normalize = false;
 sin.layer.onFrame = function(event) {
     if (sin.vectorPlotter.running) {
