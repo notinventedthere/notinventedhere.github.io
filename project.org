@@ -1,6 +1,19 @@
 #+TITLE: vector-fields
+[[https://notinventedthere.github.io/vector-fun/][Live Site]]
 * Description
-Playing around with vector fields in paperjs.
+A small experiment with [[https://en.wikipedia.org/wiki/Vector_field][vector fields]] in [[http://paperjs.org/][paper.js.]]
+
+I started by reading and watching material on linear algebra and vector fields.
+Then I wrote a renderer for the vectors, choosing evenly spaced points and
+drawing the vector at that point with an arrow. I then moved on to writing a
+particle simulator which treats the vectors as velocities. Overlaying these
+systems gives some pleasing visuals.
+
+The final set of examples features such things as cursor tracking,
+calculating the angle of vectors such that they form curves in the space,
+color changes, sine functions, and particle respawning.
+
+The bulk of the project took one week to complete as a javascript novice.
 * Notes
 - vectors must be on the left side of a multiplication due to js typing quirks
 - when the error 'this._x is not a function' is raised, make sure all constructors

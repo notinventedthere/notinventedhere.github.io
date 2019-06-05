@@ -139,7 +139,7 @@ let mouseFunctions = {
     follow: function(event) {
         return function(point) {
             let distance = event.point.transform(cartesianMatrix(35).invert()) - point;
-            let angle = curveAngle(distance, 60);
+            let angle = curveAngle(distance, flow2Rate);
             distance.angle = angle;
             return distance;
         };
@@ -310,10 +310,15 @@ flow1.layer.onFrame = function(event) {
 };
 
 let flow2 = newVectorLayer('flow2', new VectorField(point => point));
+let flow2Rate = 60;
 flow2.vectorPlotter.vectorField = new VectorField(point => point);
 flow2.vectorPlotter.vectorMaximum = 3;
 plotterSetup(flow2.vectorPlotter, () => arrow(new Point(0, 0), 5), 20);
 moverSetup(flow2.particleMover, 300);
+onKeyDown = function(event) {
+    if (event.key == 'right') flow2Rate++;
+    if (event.key == 'left') flow2Rate--;
+};
 flow2.layer.onMouseMove = function(event) {
     let vectorFunction = mouseFunctions.follow(event);
     flow2.particleMover.vectorField.vectorFunction = vectorFunction;
