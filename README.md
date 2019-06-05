@@ -1,19 +1,11 @@
+# vector-fun
 
-# Table of Contents
-
-1.  [Description](#orgd0ddf68)
-2.  [Notes](#org5f26e2e)
-3.  [TODOs](#orgaacea54)
-    1.  [Read about vector fields](#org89d4ad6)
-    2.  [Read about manipulating vectors in paperjs](#orgd1ce9e5)
-    3.  [Find out how to draw arrows in paperjs](#org0a307ee)
-
-[Live Site](https://notinventedthere.github.io/vector-fun/)
+**[Live Site](https://notinventedthere.github.io/vector-fun/)**
 
 
 <a id="orgd0ddf68"></a>
 
-# Description
+## Description
 
 A small experiment with [vector fields](https://en.wikipedia.org/wiki/Vector_field) in [paper.js.](http://paperjs.org/)
 
@@ -32,7 +24,7 @@ The bulk of the project took one week to complete as a javascript novice.
 
 <a id="org5f26e2e"></a>
 
-# Notes
+## Notes
 
 -   vectors must be on the left side of a multiplication due to js typing quirks
 -   when the error 'this.<sub>x</sub> is not a function' is raised, make sure all constructors
@@ -41,22 +33,22 @@ The bulk of the project took one week to complete as a javascript novice.
 
 <a id="orgaacea54"></a>
 
-# TODOs
+## TODOs
 
 
 <a id="org89d4ad6"></a>
 
-## DONE Read about vector fields
+### DONE Read about vector fields
 
 
 <a id="orgd1ce9e5"></a>
 
-## DONE Read about manipulating vectors in paperjs
+### DONE Read about manipulating vectors in paperjs
 
 
 <a id="org0a307ee"></a>
 
-## DONE Find out how to draw arrows in paperjs
+### DONE Find out how to draw arrows in paperjs
 
 use paths (i.e. it's manual)
 CLOSED: <span class="timestamp-wrapper"><span class="timestamp">[2019-05-27 Mon 18:29]</span></span>
